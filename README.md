@@ -125,3 +125,50 @@ uvicorn app.main:app --reload
 ```
 
 The frontend reads the backend address from `VITE_API_URL` (default `http://localhost:8000`, see `.env.example`). The helpers are in `src/api.js`.
+
+## Deployment (Firebase Hosting)
+
+The app is deployed to Firebase Hosting (project: `budgey-1e9e0`).
+
+### Test (preview) link
+
+https://budgey-1e9e0--test-dzt3p3av.web.app
+
+This is a temporary preview channel for testing. It expires on **2026-11-02**. Redeploying the same channel keeps the same URL.
+
+### Deploying
+
+One-time setup:
+
+```bash
+npm install -g firebase-tools
+firebase login
+```
+
+Deploy a new test version:
+
+```bash
+npm run build
+firebase hosting:channel:deploy test
+```
+
+Extend the expiry (up to 30 days):
+
+```bash
+firebase hosting:channel:deploy test --expires 14d
+```
+
+Deploy to the main site (`https://budgey-1e9e0.web.app`):
+
+```bash
+npm run build
+firebase deploy --only hosting
+```
+
+### Notes
+
+- Firebase serves the `dist` folder, so always run `npm run build` before deploying.
+- `.env` values are baked in at build time. Rebuild after changing them.
+- The camera only works over HTTPS, which Firebase provides automatically. Browsers will ask for camera permission.
+- If the app uses Firebase Auth, add the preview domain under Authentication > Settings > Authorized domains.
+- To deploy, you must be added to the Firebase project (Project settings > Users and permissions).
