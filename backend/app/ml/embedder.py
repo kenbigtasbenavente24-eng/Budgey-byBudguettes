@@ -9,6 +9,9 @@ from typing import Protocol
 
 import numpy as np
 from PIL import Image
+import torch
+import torchvision.models as models
+import torchvision.transforms as transforms
 
 
 class Embedder(Protocol):
@@ -20,26 +23,48 @@ class Embedder(Protocol):
         ...
 
 
-class PlaceholderEmbedder:
-    """Grid-average colour features. Only for wiring/testing the pipeline;
-    NOT a product-recognition model."""
+class ResNetEmbedder:
+    """Pre-trained ResNet18 feature extractor for product image recognition."""
 
-    name = "placeholder-color-grid"
-    grid = 4
-    dim = grid * grid * 3
+    name = "resnet18-pytorch"
+    dim = 512
+
+    def __init__(self):
+        # Load pre-trained ResNet18 weights
+        weights = models.ResNet18_Weights.DEFAULT
+        self.model = models.resnet18(weights=weights)
+        
+        # Remove the final classification layer to use it purely as a feature extractor
+        self.feature_extractor = torch.nn.Sequential(*list(self.model.children())[:-1])
+        self.feature_extractor.eval()
+
+        # Standard ImageNet transformation pipeline
+        self.transform = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406], 
+                std=[0.229, 0.224, 0.225]
+            ),
+        ])
 
     def embed(self, image: Image.Image) -> np.ndarray:
-        img = image.convert("RGB").resize((64, 64))
-        arr = np.asarray(img, dtype=np.float32) / 255.0
-        cell = 64 // self.grid
-        feats = arr.reshape(self.grid, cell, self.grid, cell, 3).mean(axis=(1, 3))
-        vec = feats.reshape(-1)
-        vec = vec - vec.mean()
+        # Ensure image is RGB
+        img = image.convert("RGB")
+        tensor = self.transform(img).unsqueeze(0)  # Add batch dimension
+
+        with torch.no_grad():
+            features = self.feature_extractor(tensor)
+
+        # Flatten into a 1D vector
+        vec = features.flatten().numpy()
+
+        # L2-normalize the vector
         norm = np.linalg.norm(vec)
         return (vec / norm if norm > 0 else vec).astype(np.float32)
 
 
 @lru_cache(maxsize=1)
 def get_embedder() -> Embedder:
-    # TODO: load the trained CNN here (TFLite interpreter or torch model)
-    return PlaceholderEmbedder()
+    # Swapped from PlaceholderEmbedder to the real PyTorch ResNetEmbedder
+    return ResNetEmbedder()
