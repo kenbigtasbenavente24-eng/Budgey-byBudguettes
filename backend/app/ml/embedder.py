@@ -73,3 +73,5 @@ class ResNetClassifier:
 @lru_cache(maxsize=1)
 def get_classifier() -> Classifier:
     return ResNetClassifier()
+# Backward compatibility alias so health.py and other routers don't break
+get_embedder = get_classifier
