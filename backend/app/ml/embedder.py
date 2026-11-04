@@ -71,8 +71,15 @@ class ResNetClassifier:
             predicted_idx = torch.argmax(probabilities).item()
             confidence = probabilities[predicted_idx].item()
 
+        category = self.classes[predicted_idx]
+        
+        # Confidence threshold safeguard: if under 85%, fallback to "other"
+        CONFIDENCE_THRESHOLD = 0.85
+        if confidence < CONFIDENCE_THRESHOLD:
+            category = "other"
+
         return {
-            "category": self.classes[predicted_idx],
+            "category": category,
             "confidence": round(float(confidence), 4)
         }
 
