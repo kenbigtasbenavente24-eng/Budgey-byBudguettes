@@ -9,14 +9,12 @@ import torch
 import torchvision.models as models
 import torchvision.transforms as transforms
 
-
 class Classifier(Protocol):
     name: str
 
     def classify(self, image: Image.Image) -> dict:
         """Return predicted category and confidence."""
         ...
-
 
 class ResNetClassifier:
     """Fine-tuned ResNet18 classifier for Budgey product categories (5-class v1.1)."""
@@ -82,7 +80,6 @@ class ResNetClassifier:
             "category": category,
             "confidence": round(float(confidence), 4)
         }
-
 
 @lru_cache(maxsize=1)
 def get_classifier() -> Classifier:
