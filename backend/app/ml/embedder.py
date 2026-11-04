@@ -1,4 +1,4 @@
-"""Image classification using the fine-tuned ResNet18 model."""
+"""Image classification using the fine-tuned ResNet18 model (v1.1 - 5 Classes)."""
 
 from functools import lru_cache
 from typing import Protocol
@@ -19,26 +19,32 @@ class Classifier(Protocol):
 
 
 class ResNetClassifier:
-    """Fine-tuned ResNet18 classifier for Budgey product categories."""
+    """Fine-tuned ResNet18 classifier for Budgey product categories (5-class v1.1)."""
 
-    name = "resnet18-classifier-pytorch"
+    name = "resnet18-classifier-pytorch-v1.1"
 
     def __init__(self):
-        # Initialize ResNet18 structure (no default ImageNet weights needed since we load our fine-tuned .pt)
+        # Initialize ResNet18 structure
         self.model = models.resnet18(weights=None)
         
-        # Modify the final classification layer to match your 4 classes
+        # Modify final classification layer to match 5 classes (with Dropout matching training)
         num_features = self.model.fc.in_features
-        self.model.fc = torch.nn.Linear(num_features, 4)
+        self.model.fc = torch.nn.Sequential(
+            torch.nn.Dropout(0.3),
+            torch.nn.Linear(num_features, 5)
+        )
         
-        # Load your trained model weights checkpoint
-        model_path = os.path.join(os.path.dirname(__file__), "../../../budgey_classifier.pt")
-        # Fallback path if placed directly in backend root
+        # Load your v1.1 trained model weights checkpoint from backend root
+        model_path = os.path.join(os.path.dirname(__file__), "../../../budgey_classifier_V1.1.pt")
+        # Fallback path if placed directly in root
         if not os.path.exists(model_path):
-            model_path = "budgey_classifier.pt"
+            model_path = "budgey_classifier_V1.1.pt"
             
         if os.path.exists(model_path):
             self.model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+            print(f"Successfully loaded model weights from {model_path}")
+        else:
+            print(f"Warning: Model weights not found at {model_path}!")
         
         self.model.eval()
 
@@ -52,7 +58,8 @@ class ResNetClassifier:
             ),
         ])
         
-        self.classes = ["clothing", "shoes", "food", "drinks"]
+        # Updated 5 classes for v1.1
+        self.classes = ["clothing", "shoes", "food", "drinks", "other"]
 
     def classify(self, image: Image.Image) -> dict:
         img = image.convert("RGB")
@@ -73,5 +80,6 @@ class ResNetClassifier:
 @lru_cache(maxsize=1)
 def get_classifier() -> Classifier:
     return ResNetClassifier()
+
 # Backward compatibility alias so health.py and other routers don't break
 get_embedder = get_classifier
