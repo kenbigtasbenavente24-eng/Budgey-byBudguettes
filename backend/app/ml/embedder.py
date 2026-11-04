@@ -36,7 +36,6 @@ class ResNetClassifier:
         
         # Load your v1.1 trained model weights checkpoint from backend root
         model_path = os.path.join(os.path.dirname(__file__), "../../../budgey_classifier_V1.1.pt")
-        # Fallback path if placed directly in root
         if not os.path.exists(model_path):
             model_path = "budgey_classifier_V1.1.pt"
             
@@ -58,8 +57,9 @@ class ResNetClassifier:
             ),
         ])
         
-        # Updated 5 classes for v1.1
-        self.classes = ["clothing", "shoes", "food", "drinks", "other"]
+        # CRITICAL: Must match PyTorch ImageFolder's strict alphabetical order during training:
+        # 0: clothing, 1: drinks, 2: food, 3: other, 4: shoes
+        self.classes = ["clothing", "drinks", "food", "other", "shoes"]
 
     def classify(self, image: Image.Image) -> dict:
         img = image.convert("RGB")
@@ -73,7 +73,7 @@ class ResNetClassifier:
 
         category = self.classes[predicted_idx]
         
-        # Confidence threshold safeguard: if under 85%, fallback to "other"
+        # Confidence threshold safeguard (85%)
         CONFIDENCE_THRESHOLD = 0.85
         if confidence < CONFIDENCE_THRESHOLD:
             category = "other"
@@ -88,5 +88,5 @@ class ResNetClassifier:
 def get_classifier() -> Classifier:
     return ResNetClassifier()
 
-# Backward compatibility alias so health.py and other routers don't break
+# Backward compatibility alias
 get_embedder = get_classifier
