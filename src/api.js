@@ -26,8 +26,8 @@ export async function classifyPhoto(dataUrl) {
 const MODEL_TO_APP_CATEGORY = {
   clothing: "Apparel",
   shoes: "Apparel",
-  food: "Food",
-  drinks: "Drinks",
+  food: "Food & Drinks",
+  drinks: "Food & Drinks", // food and drinks share one category in the app
 };
 
 // Returns an app category name, or null when there is nothing to suggest.

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import "./Phototag.css";
 
-const CATEGORIES = ["Food", "Drinks", "Personal Care", "Apparel", "Travel", "Other"];
+const CATEGORIES = ["Food & Drinks", "Personal Care", "Apparel", "Travel", "Other"];
 
 const REASONS = [
   { label: "Want", key: "want" },
