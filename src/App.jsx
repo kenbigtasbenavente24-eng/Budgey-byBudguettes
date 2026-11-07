@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Camera from "./Camera";
 import PhotoTag from "./Phototag";
 import Gallery from "./Gallery";
+import { suggestCategory } from "./api";
 
 const STORAGE_KEY = "budgey:entries";
 
@@ -34,8 +35,25 @@ function shrinkPhoto(dataUrl, maxSide = 900) {
 export default function App() {
   const [screen, setScreen] = useState("camera");
   const [pendingPhoto, setPendingPhoto] = useState(null);
+  const [suggestion, setSuggestion] = useState(null);
+  const classifyId = useRef(0);
   const [editing, setEditing] = useState(null);
   const [entries, setEntries] = useState(loadEntries);
+
+  // New photo: open the tag screen right away, and ask the classifier for a
+  // category in the background. If the backend is off or fails, the user just
+  // picks the category themselves like before.
+  const handleCapture = (photo) => {
+    const id = ++classifyId.current;
+    setSuggestion(null);
+    setPendingPhoto(photo);
+    shrinkPhoto(photo)
+      .then(suggestCategory)
+      .then((category) => {
+        if (id === classifyId.current) setSuggestion(category);
+      })
+      .catch((err) => console.warn("Classifier unavailable:", err));
+  };
 
   useEffect(() => {
     try {
@@ -85,6 +103,7 @@ export default function App() {
     return (
       <PhotoTag
         photo={pendingPhoto}
+        suggestion={suggestion}
         onClose={() => setPendingPhoto(null)}
         onSave={saveEntry}
       />
@@ -117,7 +136,7 @@ export default function App() {
 
   return (
     <Camera
-      onCapture={setPendingPhoto}
+      onCapture={handleCapture}
       onOpenGallery={() => setScreen("gallery")}
       latestPhoto={entries[0]?.photo}
     />

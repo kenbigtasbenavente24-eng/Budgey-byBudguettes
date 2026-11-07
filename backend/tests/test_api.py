@@ -20,15 +20,16 @@ def test_health():
     assert r.json()["status"] == "ok"
 
 
-def test_embed_returns_vector():
-    r = client.post("/v1/embed", files={"file": ("a.png", _png((200, 30, 30)), "image/png")})
+def test_classify_returns_category():
+    r = client.post("/v1/classify", files={"file": ("a.png", _png((200, 30, 30)), "image/png")})
     assert r.status_code == 200
     body = r.json()
-    assert body["dim"] == len(body["embedding"])
+    assert body["category"] in {"clothing", "drinks", "food", "other", "shoes"}
+    assert 0.0 <= body["confidence"] <= 1.0
 
 
-def test_embed_rejects_non_image():
-    r = client.post("/v1/embed", files={"file": ("a.txt", b"hello", "text/plain")})
+def test_classify_rejects_non_image():
+    r = client.post("/v1/classify", files={"file": ("a.txt", b"hello", "text/plain")})
     assert r.status_code == 415
 
 

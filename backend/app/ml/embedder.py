@@ -32,17 +32,20 @@ class ResNetClassifier:
             torch.nn.Linear(num_features, 5)
         )
         
-        # Load your v1.1 trained model weights checkpoint from backend root
-        model_path = os.path.join(os.path.dirname(__file__), "../../../budgey_classifier_V1.1.pt")
+        # The weights live in backend/ (this file is backend/app/ml/embedder.py),
+        # so the path works no matter which folder the server is started from.
+        model_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "budgey_classifier_V1.1.pt")
+        )
         if not os.path.exists(model_path):
-            model_path = "budgey_classifier_V1.1.pt"
-            
-        if os.path.exists(model_path):
-            self.model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
-            print(f"Successfully loaded model weights from {model_path}")
-        else:
-            print(f"Warning: Model weights not found at {model_path}!")
-        
+            # Fail loudly: running with untrained weights would return random categories.
+            raise FileNotFoundError(f"Classifier weights not found at {model_path}")
+
+        self.model.load_state_dict(
+            torch.load(model_path, map_location=torch.device("cpu"), weights_only=True)
+        )
+        print(f"Successfully loaded model weights from {model_path}")
+
         self.model.eval()
 
         # Standard transformation pipeline matching training
