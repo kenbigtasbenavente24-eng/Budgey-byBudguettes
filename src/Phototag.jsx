@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import "./Phototag.css";
 
-const CATEGORIES = ["Food", "Personal Care", "Apparel", "Travel", "Other"];
+const CATEGORIES = ["Food & Drinks", "Personal Care", "Apparel", "Travel", "Other"];
 
 const REASONS = [
   { label: "Want", key: "want" },
@@ -31,6 +31,7 @@ function Chevron({ up }) {
 export default function PhotoTag({
   photo,
   initial,
+  suggestion, // category suggested by the classifier; may arrive after the screen opens
   submitLabel = "Add to Gallery",
   onClose,
   onSave,
@@ -42,6 +43,15 @@ export default function PhotoTag({
   const [amount, setAmount] = useState(initial ? String(initial.amount) : "");
   const [category, setCategory] = useState(initial?.category ?? "");
   const [otherMode, setOtherMode] = useState(startsOther);
+
+  // Fill in the suggested category when it arrives, but never overwrite
+  // something the user already picked or typed.
+  const [seenSuggestion, setSeenSuggestion] = useState(null);
+  if (suggestion !== seenSuggestion) {
+    setSeenSuggestion(suggestion);
+    if (suggestion && !category && !otherMode) setCategory(suggestion);
+  }
+
   const [open, setOpen] = useState(false);
   const [reasonIndex, setReasonIndex] = useState(
     Math.max(0, REASONS.findIndex((r) => r.label === initial?.reason))
