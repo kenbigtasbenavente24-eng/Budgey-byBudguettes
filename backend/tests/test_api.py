@@ -24,7 +24,7 @@ def test_classify_returns_category():
     r = client.post("/v1/classify", files={"file": ("a.png", _png((200, 30, 30)), "image/png")})
     assert r.status_code == 200
     body = r.json()
-    assert body["category"] in {"clothing", "drinks", "food", "other", "shoes"}
+    assert body["category"] in {"clothing", "drinks", "food", "others", "shoes"}
     assert 0.0 <= body["confidence"] <= 1.0
 
 
