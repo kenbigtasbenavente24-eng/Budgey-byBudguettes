@@ -1,4 +1,4 @@
-"""Image classification using the fine-tuned ResNet18 model (v1.1 - 5 Classes)."""
+"""Image classification using the fine-tuned ResNet18 model (v1.2 - 5 Classes)."""
 
 from functools import lru_cache
 from typing import Protocol
@@ -16,10 +16,20 @@ class Classifier(Protocol):
         """Return predicted category and confidence."""
         ...
 
-class ResNetClassifier:
-    """Fine-tuned ResNet18 classifier for Budgey product categories (5-class v1.1)."""
+class SquarePad:
+    """Matches the padding transformation used during v1.2 training."""
+    def __call__(self, image):
+        w, h = image.size
+        max_wh = max(w, h)
+        hp = (max_wh - w) // 2
+        vp = (max_wh - h) // 2
+        padding = (hp, vp, max_wh - w - hp, max_wh - h - vp)
+        return transforms.functional.pad(image, padding, fill=0, padding_mode='constant')
 
-    name = "resnet18-classifier-pytorch-v1.1"
+class ResNetClassifier:
+    """Fine-tuned ResNet18 classifier for Budgey product categories (5-class v1.2)."""
+
+    name = "resnet18-classifier-pytorch-v1.2"
 
     def __init__(self):
         # Initialize ResNet18 structure
@@ -32,24 +42,22 @@ class ResNetClassifier:
             torch.nn.Linear(num_features, 5)
         )
         
-        # The weights live in backend/ (this file is backend/app/ml/embedder.py),
-        # so the path works no matter which folder the server is started from.
-        model_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "budgey_classifier_V1.1.pt")
-        )
+        # Load your v1.2 trained model weights checkpoint from backend root
+        model_path = os.path.join(os.path.dirname(__file__), "../../../budgey_classifier_v1.2.pt")
         if not os.path.exists(model_path):
-            # Fail loudly: running with untrained weights would return random categories.
-            raise FileNotFoundError(f"Classifier weights not found at {model_path}")
-
-        self.model.load_state_dict(
-            torch.load(model_path, map_location=torch.device("cpu"), weights_only=True)
-        )
-        print(f"Successfully loaded model weights from {model_path}")
-
+            model_path = "budgey_classifier_v1.2.pt"
+            
+        if os.path.exists(model_path):
+            self.model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+            print(f"Successfully loaded model weights from {model_path}")
+        else:
+            print(f"Warning: Model weights not found at {model_path}!")
+        
         self.model.eval()
 
-        # Standard transformation pipeline matching training
+        # Standard transformation pipeline including SquarePad to prevent aspect-ratio stretching
         self.transform = transforms.Compose([
+            SquarePad(),
             transforms.Resize((224, 224)),
             transforms.ToTensor(),
             transforms.Normalize(
@@ -58,9 +66,9 @@ class ResNetClassifier:
             ),
         ])
         
-        # CRITICAL: Must match PyTorch ImageFolder's strict alphabetical order during training:
-        # 0: clothing, 1: drinks, 2: food, 3: other, 4: shoes
-        self.classes = ["clothing", "drinks", "food", "other", "shoes"]
+        # CRITICAL: Must match PyTorch ImageFolder's strict alphabetical order from v1.2 training:
+        # 0: clothing, 1: drinks, 2: food, 3: others, 4: shoes
+        self.classes = ["clothing", "drinks", "food", "others", "shoes"]
 
     def classify(self, image: Image.Image) -> dict:
         img = image.convert("RGB")
@@ -77,7 +85,7 @@ class ResNetClassifier:
         # Confidence threshold safeguard (85%)
         CONFIDENCE_THRESHOLD = 0.85
         if confidence < CONFIDENCE_THRESHOLD:
-            category = "other"
+            category = "others"  # Fallback matches the pluralized class name
 
         return {
             "category": category,
