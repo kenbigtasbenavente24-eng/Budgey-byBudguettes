@@ -1,3 +1,6 @@
+from datetime import date
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -28,3 +31,30 @@ class MatchResponse(BaseModel):
     matched: bool
     matches: list[Match]
     threshold: float
+
+
+class WeekTotal(BaseModel):
+    week_start: date
+    total: float = Field(ge=0)
+
+
+class ForecastRequest(BaseModel):
+    weekly_totals: list[WeekTotal] = Field(min_length=1, max_length=520)
+    horizon: int = Field(default=4, ge=1, le=13)
+    target_weekly: float = Field(gt=0)
+
+
+class ForecastPoint(BaseModel):
+    week_start: date
+    total: float
+
+
+class ForecastResponse(BaseModel):
+    method: Literal["arima", "moving_average"]
+    weeks_used: int
+    forecast: list[ForecastPoint]
+    forecast_avg_weekly: float
+    lower: float
+    upper: float
+    target_weekly: float
+    verdict: Literal["warn", "keep_it_up"]

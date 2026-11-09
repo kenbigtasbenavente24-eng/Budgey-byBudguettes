@@ -63,5 +63,43 @@ def test_match_dimension_mismatch():
     assert r.status_code == 422
 
 
-def test_forecast_not_implemented():
-    assert client.post("/v1/forecast").status_code == 501
+from datetime import date, timedelta
+import random
+
+
+def _weeks(totals):
+    start = date(2026, 1, 5)
+    return [
+        {"week_start": (start + timedelta(weeks=i)).isoformat(), "total": t}
+        for i, t in enumerate(totals)
+    ]
+
+
+def test_forecast_arima_follows_rising_spending():
+    rng = random.Random(0)
+    totals = [800 + 50 * i + rng.uniform(-40, 40) for i in range(16)]
+    r = client.post("/v1/forecast", json={
+        "weekly_totals": _weeks(totals), "horizon": 4, "target_weekly": 1000})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["method"] == "arima"
+    assert len(body["forecast"]) == 4
+    assert body["forecast_avg_weekly"] > sum(totals) / len(totals)
+    assert body["lower"] <= body["forecast_avg_weekly"] <= body["upper"]
+    assert body["verdict"] == "warn"
+
+
+def test_forecast_short_series_uses_moving_average():
+    r = client.post("/v1/forecast", json={
+        "weekly_totals": _weeks([900, 1100, 1000, 950, 1050, 1000]),
+        "horizon": 4, "target_weekly": 2000})
+    body = r.json()
+    assert r.status_code == 200
+    assert body["method"] == "moving_average"
+    assert body["verdict"] == "keep_it_up"
+
+
+def test_forecast_rejects_bad_target():
+    r = client.post("/v1/forecast", json={
+        "weekly_totals": _weeks([100, 200]), "horizon": 4, "target_weekly": 0})
+    assert r.status_code == 422
