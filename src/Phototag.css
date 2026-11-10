@@ -54,6 +54,90 @@
   padding: 26px var(--pad-x) 32px;
   background: var(--sheet);
   border-radius: 28px 28px 0 0;
+  /* Drag handle: a negative bottom margin lets the sheet slide down past the
+     bottom edge (the photo grows to fill the space). --drag is set in JS. */
+  margin-bottom: calc(var(--drag, 0px) * -1);
+  transition: margin-bottom 0.22s ease;
+}
+.sheet.is-dragging {
+  transition: none;
+}
+
+/* ---- Drag handle (the little bar at the top of the sheet) ---- */
+.sheet__handle {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 26px;                 /* big touch target; the visible bar is smaller */
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;           /* so dragging doesn't scroll the page */
+}
+.sheet.is-dragging .sheet__handle {
+  cursor: grabbing;
+}
+.sheet__handle::before {
+  content: "";
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  width: 40px;
+  height: 5px;
+  border-radius: 99px;
+  background: #cdc3b3;
+  transform: translateX(-50%);
+}
+
+/* ---- Pill on the photo: category + confidence ---- */
+.ai-pill {
+  position: absolute;
+  left: 16px;
+  bottom: calc(var(--overlap) + 12px);   /* sits just above the sheet */
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: calc(100% - 32px);
+  padding: 7px 13px 7px 11px;
+  border-radius: 99px;
+  background: rgba(36, 31, 27, 0.82);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font: 500 11px/1 "Poppins", system-ui, sans-serif;
+  white-space: nowrap;
+}
+.ai-pill strong {
+  font-weight: 700;
+}
+.ai-pill span {
+  opacity: 0.85;
+}
+.ai-pill strong + span::before {
+  content: "·";
+  margin-right: 7px;
+}
+.ai-pill__dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #b3a898;
+}
+.ai-pill__dot.is-sure   { background: #4cc27a; }   /* 85% and up */
+.ai-pill__dot.is-unsure { background: #f0a030; }   /* below 85% */
+.ai-pill__dot--loading {
+  animation: ai-pulse 1s ease-in-out infinite;
+}
+@keyframes ai-pulse {
+  50% { opacity: 0.3; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-pill__dot--loading { animation: none; }
+  .sheet { transition: none; }
 }
 
 .sheet__top {
@@ -106,6 +190,31 @@
   font-weight: 500;
   letter-spacing: 0.02em;
   color: var(--muted);
+}
+
+/* Label row that can carry a small tag on the right (Category: "Autofilled by Budgey") */
+.field__label--split {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  white-space: nowrap;
+}
+.autofill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-style: normal;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--reward);
+}
+.autofill svg {
+  flex: none;
 }
 
 .box {

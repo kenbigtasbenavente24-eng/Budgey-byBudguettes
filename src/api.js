@@ -24,16 +24,27 @@ export async function classifyPhoto(dataUrl) {
 // The model's classes -> the category names used in the tag form.
 // "other" is left out on purpose: no suggestion, the user picks.
 const MODEL_TO_APP_CATEGORY = {
-  clothing: "Apparel",
-  shoes: "Apparel",
-  food: "Food & Drinks",
-  drinks: "Food & Drinks", // food and drinks share one category in the app
+  clothing: "Clothes",
+  shoes: "Footwear",
+  food: "Food",
+  drinks: "Beverages",
 };
 
-// Returns an app category name, or null when there is nothing to suggest.
-export async function suggestCategory(dataUrl) {
-  const { category } = await classifyPhoto(dataUrl);
-  return MODEL_TO_APP_CATEGORY[category] ?? null;
+// What the tag screen needs from the classifier:
+//   category    app category to fill in, or null when there is nothing to suggest
+//   confidence  0 to 1
+//   kind        "match"  the model is sure and the category is one of ours
+//               "others" the model is sure it is something else
+//               "unsure" below the threshold, so the server gave up
+export async function classifyForTag(dataUrl) {
+  const { category, confidence } = await classifyPhoto(dataUrl);
+  const appCategory = MODEL_TO_APP_CATEGORY[category] ?? null;
+
+  let kind = "match";
+  if (!appCategory) {
+    kind = confidence >= CONFIDENCE_THRESHOLD ? "others" : "unsure";
+  }
+  return { category: appCategory, confidence, kind };
 }
 
 // Compare an embedding with stored ones: candidates = [{ id, embedding }].
