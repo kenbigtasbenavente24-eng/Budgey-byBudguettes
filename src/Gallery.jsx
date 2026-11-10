@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import BottomNav from "./Bottomnav";
 import "./Gallery.css";
 import icons from "./icons";
+import { formatPeso, formatPesoFull } from "./money";
+import Recap from "./Recap";
+import { buildRecap } from "./recapData";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -9,13 +12,6 @@ const MONTHS = [
 ];
 
 const REASON_ORDER = ["Need", "Reward", "Want"];
-
-const peso = (n) =>
-  "₱" +
-  Number(n).toLocaleString("en-PH", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
 
 const formatDate = (iso) => {
   const d = new Date(iso);
@@ -34,6 +30,8 @@ export default function Gallery({ entries, onNavigate, onDelete, onEdit }) {
   const [selected, setSelected] = useState(null);
   const [viewing, setViewing] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [recapOpen, setRecapOpen] = useState(false);
+  const recap = useMemo(() => buildRecap(entries, new Date()), [entries]);
 
   // Group photos by month, newest first
   const groups = useMemo(() => {
@@ -102,7 +100,7 @@ export default function Gallery({ entries, onNavigate, onDelete, onEdit }) {
 
         <p className="gallery__label">Total Spending</p>
         <div className="gallery__total">
-          <strong>{peso(stats.total)}</strong>
+          <strong title={formatPesoFull(stats.total)}>{formatPeso(stats.total)}</strong>
           <div className="gallery__top">
             <b>{stats.top}</b>
             <span>Top Category</span>
@@ -134,37 +132,65 @@ export default function Gallery({ entries, onNavigate, onDelete, onEdit }) {
         </ul>
       </header>
 
-      <section className="gallery__body">
+            <section className="gallery__body">
         {entries.length === 0 ? (
           <div className="empty">
             <img src={icons.emptyGallery} width="150" height="130" alt="" />
             <p>The photos you took in this app will show up here</p>
           </div>
         ) : (
-          groups.map((g) => (
-            <div key={g.key} className="month">
-              <h2 className="month__head">
-                {g.month}, {g.year}
-              </h2>
-              <div className="grid">
-                {g.items.map((e) => (
-                  <button
-                    key={e.id}
-                    className="thumb"
-                    onClick={() => setSelected(e)}
-                    aria-label={`${e.name}, ${peso(e.amount)}`}
-                  >
-                    <img src={e.photo} alt="" />
-                    <span className="thumb__price">{peso(e.amount)}</span>
-                  </button>
-                ))}
+          <>
+            {recap && (
+              <button className="recap-banner" onClick={() => setRecapOpen(true)}>
+                <span className="recap-banner__logo" aria-hidden="true">b.</span>
+                <span className="recap-banner__text">
+                  <b>Your {recap.label.replace(" · ", " ")} recap</b>
+                  <small>See your spending story</small>
+                </span>
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 12h16M14 6l6 6-6 6" />
+                </svg>
+              </button>
+            )}
+
+            {groups.map((g) => (
+              <div key={g.key} className="month">
+                <h2 className="month__head">
+                  {g.month}, {g.year}
+                </h2>
+                <div className="grid">
+                  {g.items.map((e) => (
+                    <button
+                      key={e.id}
+                      className="thumb"
+                      onClick={() => setSelected(e)}
+                      aria-label={`${e.name}, ${formatPesoFull(e.amount)}`}
+                    >
+                      <img src={e.photo} alt="" />
+                      <span className="thumb__price">{formatPeso(e.amount)}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+          </>
         )}
       </section>
 
       <BottomNav active="gallery" onNavigate={onNavigate} />
+      {recapOpen && recap && (
+      <Recap recap={recap} onClose={() => setRecapOpen(false)} />
+)}
 
       {/* Details card */}
       {selected && (
@@ -189,7 +215,7 @@ export default function Gallery({ entries, onNavigate, onDelete, onEdit }) {
             <div className="card__body">
               <div className="card__row">
                 <h3>{selected.name}</h3>
-                <strong>{peso(selected.amount)}</strong>
+                <strong>{formatPesoFull(selected.amount)}</strong>
               </div>
               <div className="card__row card__row--meta">
                 <span>{formatDate(selected.createdAt)}</span>

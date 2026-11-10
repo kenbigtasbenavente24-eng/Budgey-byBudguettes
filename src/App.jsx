@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Camera from "./Camera";
 import PhotoTag from "./Phototag";
 import Gallery from "./Gallery";
-import { suggestCategory } from "./api";
+import { classifyForTag } from "./api";
 
 const STORAGE_KEY = "budgey:entries";
 
@@ -35,7 +35,7 @@ function shrinkPhoto(dataUrl, maxSide = 900) {
 export default function App() {
   const [screen, setScreen] = useState("camera");
   const [pendingPhoto, setPendingPhoto] = useState(null);
-  const [suggestion, setSuggestion] = useState(null);
+  const [classification, setClassification] = useState(null);
   const classifyId = useRef(0);
   const [editing, setEditing] = useState(null);
   const [entries, setEntries] = useState(loadEntries);
@@ -44,16 +44,21 @@ export default function App() {
   // category in the background. If the backend is off or fails, the user just
   // picks the category themselves like before.
   const handleCapture = (photo) => {
-    const id = ++classifyId.current;
-    setSuggestion(null);
-    setPendingPhoto(photo);
-    shrinkPhoto(photo)
-      .then(suggestCategory)
-      .then((category) => {
-        if (id === classifyId.current) setSuggestion(category);
-      })
-      .catch((err) => console.warn("Classifier unavailable:", err));
-  };
+  const id = ++classifyId.current;
+  setClassification({ status: "loading" });
+  setPendingPhoto(photo);
+  shrinkPhoto(photo)
+    .then(classifyForTag)
+    .then((result) => {
+      if (id === classifyId.current) {
+        setClassification({ status: "done", ...result });
+      }
+    })
+    .catch((err) => {
+      console.warn("Classifier unavailable:", err);
+      if (id === classifyId.current) setClassification({ status: "error" });
+    });
+};
 
   useEffect(() => {
     try {
@@ -103,7 +108,7 @@ export default function App() {
     return (
       <PhotoTag
         photo={pendingPhoto}
-        suggestion={suggestion}
+        classification={classification}
         onClose={() => setPendingPhoto(null)}
         onSave={saveEntry}
       />

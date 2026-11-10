@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import "./Phototag.css";
 
-const CATEGORIES = ["Food & Drinks", "Personal Care", "Apparel", "Travel", "Other"];
+const CATEGORIES = ["Beverages", "Footwear", "Clothing", "Food", "Other"];
+
+// Most digits before the decimal point: 7 digits = up to ₱9,999,999
+const MAX_WHOLE_DIGITS = 7;
+
+// How much of the sheet stays on screen when it is dragged all the way down:
+// the drag handle plus the "TAG THIS PHOTO" row.
+const COLLAPSED_PEEK = 66;
+
+// Budgey is "confident" at or above this (same 85% the backend uses)
+const CONFIDENT = 0.85;
 
 const REASONS = [
   { label: "Want", key: "want" },
@@ -28,10 +38,45 @@ function Chevron({ up }) {
   );
 }
 
+// Small pill on the photo: what Budgey thinks it is, and how sure it is
+function ClassifyPill({ classification }) {
+  if (!classification || classification.status === "error") return null;
+
+  if (classification.status === "loading") {
+    return (
+      <div className="ai-pill" role="status" aria-live="polite">
+        <i className="ai-pill__dot ai-pill__dot--loading" />
+        <span>Analyzing photo…</span>
+      </div>
+    );
+  }
+
+  const { category, confidence } = classification;
+  const pct = confidence == null ? null : Math.round(confidence * 100);
+  const sure = confidence != null && confidence >= CONFIDENT;
+  const label = category ?? "Not sure";
+  const title =
+    pct == null
+      ? undefined
+      : category
+        ? `Budgey is ${pct}% confident this is ${category}`
+        : `Budgey is only ${pct}% confident, so it left the category for you`;
+
+  return (
+    <div className="ai-pill" role="status" aria-live="polite" title={title}>
+      <i className={`ai-pill__dot ${sure ? "is-sure" : "is-unsure"}`} />
+      <strong>{label}</strong>
+      {pct != null && <span>{pct}%</span>}
+    </div>
+  );
+}
+
 export default function PhotoTag({
   photo,
   initial,
-  suggestion, // category suggested by the classifier; may arrive after the screen opens
+  classification, // classifier result; may arrive after the screen opens:
+  // null | { status: "loading" } | { status: "error" } |
+  // { status: "done", category: "Shoes" | ... | null, confidence: 0..1 }
   submitLabel = "Add to Gallery",
   onClose,
   onSave,
@@ -46,11 +91,24 @@ export default function PhotoTag({
 
   // Fill in the suggested category when it arrives, but never overwrite
   // something the user already picked or typed.
+  const suggestion =
+    classification?.status === "done" ? classification.category : null;
+  const [autofilled, setAutofilled] = useState(false); // shows "Autofilled by Budgey"
   const [seenSuggestion, setSeenSuggestion] = useState(null);
   if (suggestion !== seenSuggestion) {
     setSeenSuggestion(suggestion);
-    if (suggestion && !category && !otherMode) setCategory(suggestion);
+    if (suggestion && !category && !otherMode) {
+      setCategory(suggestion);
+      setAutofilled(true);
+    }
   }
+
+  // Drag handle: pull the sheet down to see more of the photo
+  const sheetRef = useRef(null);
+  const dragRef = useRef(null);
+  const [offset, setOffset] = useState(0); // px the sheet is pushed down
+  const [dragging, setDragging] = useState(false);
+  const collapsed = offset > 0;
 
   const [open, setOpen] = useState(false);
   const [reasonIndex, setReasonIndex] = useState(
@@ -78,14 +136,62 @@ export default function PhotoTag({
     };
   }, [open]);
 
-  // Numbers and one decimal point only, max 2 decimal places
+  // Numbers and one decimal point only, max 7 digits and 2 decimal places
   const handleAmount = (e) => {
     const cleaned = e.target.value.replace(/[^0-9.]/g, "");
-    const [whole, ...rest] = cleaned.split(".");
+    const [rawWhole, ...rest] = cleaned.split(".");
+    const whole = rawWhole.replace(/^0+(?=\d)/, "").slice(0, MAX_WHOLE_DIGITS);
     setAmount(rest.length ? `${whole}.${rest.join("").slice(0, 2)}` : whole);
   };
 
+  const maxOffset = () =>
+    Math.max(0, (sheetRef.current?.offsetHeight ?? 0) - COLLAPSED_PEEK);
+
+  const onDragStart = (e) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = {
+      startY: e.clientY,
+      startOffset: offset,
+      max: maxOffset(),
+      offset,
+      moved: false,
+    };
+    setDragging(true);
+  };
+
+  const onDragMove = (e) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const dy = e.clientY - d.startY;
+    if (Math.abs(dy) > 4) d.moved = true;
+    d.offset = Math.min(d.max, Math.max(0, d.startOffset + dy));
+    setOffset(d.offset);
+  };
+
+  const onDragEnd = () => {
+    const d = dragRef.current;
+    if (!d) return;
+    dragRef.current = null;
+    setDragging(false);
+    if (d.moved) {
+      // snap to whichever end is closer
+      setOffset(d.offset > d.max / 2 ? d.max : 0);
+    } else {
+      // a plain tap on the handle toggles it
+      setOffset(d.startOffset > 0 ? 0 : d.max);
+    }
+  };
+
+  // Keyboard: Enter / Space on the handle toggles it too (it is a button)
+  const onHandleKey = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setOffset((o) => (o > 0 ? 0 : maxOffset()));
+    }
+  };
+
   const chooseCategory = (c) => {
+    setAutofilled(false); // the user picked this one themselves
     if (c === "Other") {
       setOtherMode(true);
       setCategory("");
@@ -113,9 +219,27 @@ export default function PhotoTag({
     <main className="tag">
       <div className="tag__photo">
         <img src={photo} alt="The photo you just took" />
+        <ClassifyPill classification={classification} />
       </div>
 
-      <section className="sheet" aria-label="Tag this photo">
+      <section
+        className={`sheet${dragging ? " is-dragging" : ""}`}
+        ref={sheetRef}
+        style={{ "--drag": `${offset}px` }}
+        aria-label="Tag this photo"
+      >
+        <button
+          type="button"
+          className="sheet__handle"
+          onPointerDown={onDragStart}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragEnd}
+          onPointerCancel={onDragEnd}
+          onKeyDown={onHandleKey}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? "Show the form" : "Hide the form to see the photo"}
+        />
+
         <div className="sheet__top">
           <span className="sheet__pill">TAG THIS PHOTO</span>
           <button className="sheet__close" onClick={onClose} aria-label="Close">
@@ -123,6 +247,8 @@ export default function PhotoTag({
           </button>
         </div>
 
+        {/* inert: while the sheet is pulled down, its fields can't be tabbed to */}
+        <div className="sheet__body" inert={collapsed}>
         <h2 className="sheet__title">What did you get?</h2>
 
         {/* Item name */}
@@ -154,8 +280,16 @@ export default function PhotoTag({
 
           {/* Category dropdown */}
           <div className="field field--category" ref={categoryRef}>
-            <span className="field__label" id="category-label">
+            <span className="field__label field__label--split" id="category-label">
               CATEGORY
+              {autofilled && (
+                <em className="autofill">
+                  <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true">
+                    <path d="M4 0l1 3 3 1-3 1-1 3-1-3-3-1 3-1z" fill="currentColor" />
+                  </svg>
+                  Autofilled by Budgey
+                </em>
+              )}
             </span>
 
             {otherMode ? (
@@ -237,6 +371,7 @@ export default function PhotoTag({
         <button className="sheet__save" onClick={save} disabled={!canSave}>
           {submitLabel}
         </button>
+        </div>
       </section>
     </main>
   );
