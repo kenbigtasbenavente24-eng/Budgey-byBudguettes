@@ -21,15 +21,21 @@ const normalizeCategory = (c) => {
   return name;
 };
 
-const quarterOf = (iso) => {
+const FULL_MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+// Calendar months. m is 0 to 11, like Date.getMonth()
+const monthOf = (iso) => {
   const d = new Date(iso);
-  return { year: d.getFullYear(), q: Math.floor(d.getMonth() / 3) + 1 };
+  return { year: d.getFullYear(), m: d.getMonth() };
 };
 
-const quarterKey = ({ year, q }) => year * 10 + q;
+const monthKey = ({ year, m }) => year * 12 + m;
 
-const previousQuarter = ({ year, q }) =>
-  q === 1 ? { year: year - 1, q: 4 } : { year, q: q - 1 };
+const previousMonth = ({ year, m }) =>
+  m === 0 ? { year: year - 1, m: 11 } : { year, m: m - 1 };
 
 const sum = (list) => list.reduce((t, e) => t + e.amount, 0);
 
@@ -110,32 +116,32 @@ const pctChange = (now, before) =>
   before > 0 ? Math.round(((now - before) / before) * 100) : null;
 
 // The "Budgey says" sentence, as segments so the category can be highlighted
-function buildMessage({ q, topCategory, spendChange, snapChange, hasPrevious }) {
+function buildMessage({ month, topCategory, spendChange, snapChange, hasPrevious }) {
   const parts = [];
   if (!hasPrevious) {
-    parts.push({ text: `Great start to Q${q}! ` });
+    parts.push({ text: `Great start in ${month}! ` });
     parts.push({ hl: topCategory });
     parts.push({
-      text: " was your biggest focus. Keep logging and next quarter we can show how you grow.",
+      text: " was your biggest focus. Keep logging and next month we can show how you grow.",
     });
     return parts;
   }
 
   if (snapChange !== null && snapChange > 10) {
-    parts.push({ text: `You kept the snaps coming in Q${q}! ` });
+    parts.push({ text: `You kept the snaps coming in ${month}! ` });
   } else if (snapChange !== null && snapChange < -10) {
-    parts.push({ text: `Q${q} was a quieter quarter for logging. ` });
+    parts.push({ text: `${month} was a quieter month for logging. ` });
   } else {
-    parts.push({ text: `Your Q${q} logging habit was super steady! ` });
+    parts.push({ text: `Your ${month} logging habit was super steady! ` });
   }
   parts.push({ hl: topCategory });
   if (spendChange !== null && spendChange > 10) {
     parts.push({
-      text: ` remained your highest focus, but overall spending rose ${spendChange}% from last quarter. Worth a look!`,
+      text: ` remained your highest focus, but overall spending rose ${spendChange}% from last month. Worth a look!`,
     });
   } else if (spendChange !== null && spendChange < -10) {
     parts.push({
-      text: ` remained your highest focus, and you spent ${Math.abs(spendChange)}% less than last quarter. Nice work!`,
+      text: ` remained your highest focus, and you spent ${Math.abs(spendChange)}% less than last month. Nice work!`,
     });
   } else {
     parts.push({
@@ -145,27 +151,20 @@ function buildMessage({ q, topCategory, spendChange, snapChange, hasPrevious }) 
   return parts;
 }
 
-// Which quarter to recap: the current one if it has entries,
-// otherwise the most recent quarter that does.
+// The monthly recap is about the month that just ended: from Jan 1 it is
+// December, from Mar 1 it is February, and so on. It stays that month until
+// the next 1st. Returns null when that month has no entries, so there is
+// nothing to show (for example during a user's first month).
 export function buildRecap(entries, now = new Date()) {
   if (!entries.length) return null;
 
-  const current = { year: now.getFullYear(), q: Math.floor(now.getMonth() / 3) + 1 };
-  const hasEntriesIn = (qt) =>
-    entries.some((e) => quarterKey(quarterOf(e.createdAt)) === quarterKey(qt));
+  const target = previousMonth({ year: now.getFullYear(), m: now.getMonth() });
+  const inMonth = (mo) =>
+    entries.filter((e) => monthKey(monthOf(e.createdAt)) === monthKey(mo));
 
-  let target = current;
-  if (!hasEntriesIn(current)) {
-    target = entries
-      .map((e) => quarterOf(e.createdAt))
-      .sort((a, b) => quarterKey(b) - quarterKey(a))[0];
-  }
-
-  const inQuarter = (qt) =>
-    entries.filter((e) => quarterKey(quarterOf(e.createdAt)) === quarterKey(qt));
-
-  const items = inQuarter(target);
-  const before = inQuarter(previousQuarter(target));
+  const items = inMonth(target);
+  if (!items.length) return null;
+  const before = inMonth(previousMonth(target));
 
   const total = sum(items);
   const snaps = items.length;
@@ -177,17 +176,23 @@ export function buildRecap(entries, now = new Date()) {
   const hasPrevious = before.length > 0;
 
   return {
-    q: target.q,
+    month: target.m + 1, // 1 to 12
     year: target.year,
-    label: `Q${target.q} · ${target.year}`,
+    label: `${FULL_MONTHS[target.m]} · ${target.year}`,
     total,
     snaps,
     favorite: favorite(items),
     rows,
     topCategory,
     hasPrevious,
-    snapChange, // % change in logged snaps vs last quarter (null if no data)
+    snapChange, // % change in logged snaps vs last month (null if no data)
     spendChange,
-    message: buildMessage({ q: target.q, topCategory, spendChange, snapChange, hasPrevious }),
+    message: buildMessage({
+      month: FULL_MONTHS[target.m],
+      topCategory,
+      spendChange,
+      snapChange,
+      hasPrevious,
+    }),
   };
 }

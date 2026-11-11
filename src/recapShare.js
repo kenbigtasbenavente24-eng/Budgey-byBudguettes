@@ -66,14 +66,14 @@ async function drawCard(recap) {
 
   text(ctx, "BUDGEY RECAP", pad, 150, { size: 30, weight: 600, spacing: 6 });
 
-  // Quarter chip
+  // Month chip
   roundRect(ctx, pad, 210, 250, 76, 38);
   ctx.fillStyle = INK;
   ctx.fill();
   text(ctx, recap.label, pad + 125, 260, { size: 32, weight: 600, color: "#fff", align: "center" });
 
   // Title
-  text(ctx, "My quarterly", pad, 440, { size: 110, weight: 600 });
+  text(ctx, "My monthly", pad, 440, { size: 110, weight: 600 });
   text(ctx, "spending story", pad, 560, { size: 110, weight: 600 });
 
   // Big faded logo
@@ -101,7 +101,7 @@ async function drawCard(recap) {
   const boxW = (W - pad * 2 - 30) / 2;
   [
     ["TOP CATEGORY", recap.topCategory],
-    ["VS LAST QUARTER", trendText(recap)],
+    ["VS LAST MONTH", trendText(recap)],
   ].forEach(([label, value], i) => {
     const x = pad + i * (boxW + 30);
     roundRect(ctx, x, 1600, boxW, 170, 28);
@@ -129,7 +129,7 @@ async function drawCard(recap) {
 // Returns "shared", "downloaded", or "cancelled"
 export async function shareRecapCard(recap) {
   const blob = await drawCard(recap);
-  const fileName = `budgey-q${recap.q}-${recap.year}-recap.png`;
+  const fileName = `budgey-${recap.year}-${String(recap.month).padStart(2, "0")}-recap.png`;
   const file = new File([blob], fileName, { type: "image/png" });
 
   if (navigator.canShare?.({ files: [file] })) {

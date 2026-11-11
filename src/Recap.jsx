@@ -85,7 +85,7 @@ function IntroSlide({ recap }) {
   return (
     <div className="rs rs--orange">
       <span className="chip chip--dark">{recap.label}</span>
-      <h2 className="rs__title rs__rise">Your quarterly spending story</h2>
+      <h2 className="rs__title rs__rise">Your monthly spending story</h2>
 
       <div className="rs__logo" aria-hidden="true">
         <span>b<i>.</i></span>
@@ -179,20 +179,20 @@ function TrendSlide({ recap }) {
   if (change === null) {
     big = String(Math.round(count));
     title = "A great start!";
-    sub = "This is your first recap. Keep logging to see how you grow next quarter.";
+    sub = "This is your first recap. Keep logging to see how you grow next month.";
   } else if (change > 0) {
     big = `+${Math.round(count)}%`;
     title = "Healthy logging growth!";
-    sub = "Steady progress compared to last quarter.";
+    sub = "Steady progress compared to last month.";
   } else if (change < 0) {
     big = `−${Math.round(count)}%`;
-    title = "A quieter quarter";
-    sub = "You logged fewer snaps than last quarter. Every photo counts, so keep going!";
+    title = "A quieter month";
+    sub = "You logged fewer snaps than last month. Every photo counts, so keep going!";
     up = false;
   } else {
     big = "0%";
     title = "Right on pace";
-    sub = "You logged just as much as last quarter.";
+    sub = "You logged just as much as last month.";
   }
 
   return (
