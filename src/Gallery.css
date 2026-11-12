@@ -34,10 +34,32 @@
   background: var(--cream);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
 }
-.gallery__title {
+.gallery__titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin: 0 0 14px;
+}
+.gallery__title {
+  margin: 0;
   font-size: 19px;
   font-weight: 600;
+}
+.gallery__settings {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin: -6px -8px -6px 0;  /* keeps the header height, lines the icon up with the edge */
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.gallery__settings:active {
+  background: #e6dfd2;
 }
 .gallery__label {
   margin: 0;

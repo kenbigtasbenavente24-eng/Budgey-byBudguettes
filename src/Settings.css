@@ -1,0 +1,140 @@
+/* Settings screen. Same look as the Gallery: cream header, soft background. */
+.settings {
+  --cream: #fffdf6;
+  --bg: #f9f8f4;
+  --ink: #1f1712;
+  --muted: #6f655b;
+  --field: #fffdf6;
+  --field-border: #e6dfd2;
+  --want: #c47a1c;
+
+  position: relative;
+  width: 100%;
+  max-width: var(--app-max-w);
+  height: var(--app-h);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Poppins", system-ui, sans-serif;
+}
+
+.settings__head {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: clamp(28px, 6dvh, 56px) 24px 18px 22px;
+  background: var(--cream);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
+}
+.settings__back {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #e6dfd2;
+  color: var(--ink);
+  cursor: pointer;
+}
+.settings__title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.settings__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 24px 32px;
+}
+
+.settings__card {
+  padding: 20px 18px 16px;
+  border: 1px solid var(--field-border);
+  border-radius: 16px;
+  background: var(--cream);
+}
+
+.settings__label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.settings__box {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--field-border);
+  border-radius: 10px;
+  background: #fff;
+  font: 600 16px "Poppins", system-ui, sans-serif;
+}
+.settings__box:focus-within {
+  outline: 2px solid var(--want);
+  outline-offset: 1px;
+}
+.settings__box input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+.settings__box input::placeholder {
+  color: #b3a898;
+  font-weight: 500;
+}
+.settings__box small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.settings__hint {
+  margin: 10px 0 16px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.settings__save {
+  width: 100%;
+  height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: #241f1b;
+  color: #fff;
+  font: 600 15px "Poppins", system-ui, sans-serif;
+  cursor: pointer;
+}
+.settings__save:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.settings__status {
+  min-height: 18px;
+  margin: 10px 0 0;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  color: #1b7a3c;
+}

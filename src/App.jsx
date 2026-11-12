@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import Camera from "./Camera";
 import PhotoTag from "./Phototag";
 import Gallery from "./Gallery";
+import Settings from "./Settings";
 import { classifyForTag } from "./api";
+import { loadSettings, saveSettings } from "./settingsStore";
 
 const STORAGE_KEY = "budgey:entries";
 
@@ -39,6 +41,7 @@ export default function App() {
   const classifyId = useRef(0);
   const [editing, setEditing] = useState(null);
   const [entries, setEntries] = useState(loadEntries);
+  const [settings, setSettings] = useState(loadSettings);
 
   // New photo: open the tag screen right away, and ask the classifier for a
   // category in the background. If the backend is off or fails, the user just
@@ -67,6 +70,10 @@ export default function App() {
       console.warn("Could not save entries:", err);
     }
   }, [entries]);
+
+  useEffect(() => {
+    saveSettings(settings);
+  }, [settings]);
 
   const saveEntry = async (entry) => {
     const photo = await shrinkPhoto(entry.photo);
@@ -128,6 +135,16 @@ export default function App() {
     );
   }
 
+  if (screen === "settings") {
+    return (
+      <Settings
+        targetWeekly={settings.targetWeekly}
+        onSave={(targetWeekly) => setSettings((s) => ({ ...s, targetWeekly }))}
+        onBack={() => setScreen("gallery")}
+      />
+    );
+  }
+
   if (screen === "gallery") {
     return (
       <Gallery
@@ -135,6 +152,7 @@ export default function App() {
         onNavigate={setScreen}
         onDelete={deleteEntry}
         onEdit={setEditing}
+        onOpenSettings={() => setScreen("settings")}
       />
     );
   }

@@ -3,6 +3,9 @@ import "./Phototag.css";
 
 const CATEGORIES = ["Beverages", "Footwear", "Clothing", "Food", "Other"];
 
+// What the category box shows when the model is sure it is none of the above
+const OTHER_CATEGORY = "Other";
+
 // Most digits before the decimal point: 7 digits = up to ₱9,999,999
 const MAX_WHOLE_DIGITS = 7;
 
@@ -76,13 +79,13 @@ export default function PhotoTag({
   initial,
   classification, // classifier result; may arrive after the screen opens:
   // null | { status: "loading" } | { status: "error" } |
-  // { status: "done", category: "Shoes" | ... | null, confidence: 0..1 }
+  // { status: "done", category: "Footwear" | ... | null, confidence: 0..1,
+  //   others: true when the model is sure it is something else }
   submitLabel = "Add to Gallery",
   onClose,
   onSave,
 }) {
-  const startsOther =
-    !!initial && !CATEGORIES.slice(0, -1).includes(initial.category);
+  const startsOther = !!initial && !CATEGORIES.includes(initial.category);
 
   const [name, setName] = useState(initial?.name ?? "");
   const [amount, setAmount] = useState(initial ? String(initial.amount) : "");
@@ -92,7 +95,9 @@ export default function PhotoTag({
   // Fill in the suggested category when it arrives, but never overwrite
   // something the user already picked or typed.
   const suggestion =
-    classification?.status === "done" ? classification.category : null;
+    classification?.status === "done"
+      ? classification.category ?? (classification.others ? OTHER_CATEGORY : null)
+      : null;
   const [autofilled, setAutofilled] = useState(false); // shows "Autofilled by Budgey"
   const [seenSuggestion, setSeenSuggestion] = useState(null);
   if (suggestion !== seenSuggestion) {
