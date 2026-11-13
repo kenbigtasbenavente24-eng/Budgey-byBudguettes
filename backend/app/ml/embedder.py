@@ -72,11 +72,11 @@ class ResNetClassifier:
         # 0: clothing, 1: drinks, 2: food, 3: others, 4: shoes
         self.classes = ["clothing", "drinks", "food", "others", "shoes"]
 
-    def classify(self, image: Image.Image) -> dict:
+        def classify(self, image: Image.Image) -> dict:
         img = image.convert("RGB")
         tensor = self.transform(img).unsqueeze(0)
 
-        with torch.no_grad():
+        with torch.no_rad():
             outputs = self.model(tensor)
             probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
             predicted_idx = torch.argmax(probabilities).item()
@@ -86,8 +86,10 @@ class ResNetClassifier:
         
         # Confidence threshold safeguard (85%)
         CONFIDENCE_THRESHOLD = 0.85
-        if confidence < CONFIDENCE_THRESHOLD:
-            category = "others"  # Fallback matches the pluralized class name
+        
+        # PUT IT HERE: Only force a fallback to 'others' if it's a main category failing the threshold
+        if category != "others" and confidence < CONFIDENCE_THRESHOLD:
+            category = "others"
 
         return {
             "category": category,
