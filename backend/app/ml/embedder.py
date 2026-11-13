@@ -76,7 +76,7 @@ class ResNetClassifier:
         img = image.convert("RGB")
         tensor = self.transform(img).unsqueeze(0)
 
-        with torch.no_rad():
+        with torch.no_grad():
             outputs = self.model(tensor)
             probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
             predicted_idx = torch.argmax(probabilities).item()
