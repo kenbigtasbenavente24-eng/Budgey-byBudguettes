@@ -57,13 +57,13 @@ function ClassifyPill({ classification }) {
   const { category, confidence } = classification;
   const pct = confidence == null ? null : Math.round(confidence * 100);
   const sure = confidence != null && confidence >= CONFIDENT;
-  const label = category ?? "Not sure";
+  const label = category ?? "Others";
   const title =
     pct == null
       ? undefined
       : category
         ? `Budgey is ${pct}% confident this is ${category}`
-        : `Budgey is only ${pct}% confident, so it left the category for you`;
+        : `Budgey couldn't match this to a listed category (${pct}%), so it chose Others. Type the name yourself.`;
 
   return (
     <div className="ai-pill" role="status" aria-live="polite" title={title}>
@@ -100,10 +100,15 @@ export default function PhotoTag({
       : null;
   const [autofilled, setAutofilled] = useState(false); // shows "Autofilled by Budgey"
   const [seenSuggestion, setSeenSuggestion] = useState(null);
-  if (suggestion !== seenSuggestion) {
+    if (suggestion !== seenSuggestion) {
     setSeenSuggestion(suggestion);
     if (suggestion && !category && !otherMode) {
-      setCategory(suggestion);
+      if (suggestion === OTHER_CATEGORY) {
+        // Others: open the "Other:" box empty so the user types the category name
+        setOtherMode(true);
+      } else {
+        setCategory(suggestion);
+      }
       setAutofilled(true);
     }
   }
@@ -301,9 +306,13 @@ export default function PhotoTag({
               <div className="box box--other">
                 <span className="box__other-label">Other:</span>
                 <input
-                  autoFocus
+                  autoFocus={!autofilled} // don't steal focus when Budgey autofilled it
                   value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                  onChange={(e) => {
+                    setCategory(e.target.value);
+                    setAutofilled(false);
+                  }}
+                  placeholder="Type the category name"
                   maxLength={24}
                   aria-label="Type your own category"
                 />

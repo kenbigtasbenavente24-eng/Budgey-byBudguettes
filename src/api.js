@@ -38,7 +38,11 @@ const MODEL_TO_APP_CATEGORY = {
 // no threshold check here.
 export async function classifyForTag(dataUrl) {
   const { category, confidence } = await classifyPhoto(dataUrl);
-  return { category: MODEL_TO_APP_CATEGORY[category] ?? null, confidence };
+  return {
+    category: MODEL_TO_APP_CATEGORY[category] ?? null,
+    others: category === "others", // the model says: none of the listed categories
+    confidence,
+  };
 }
  
 // Ask the backend for the 4-week spending forecast. `body` comes from
