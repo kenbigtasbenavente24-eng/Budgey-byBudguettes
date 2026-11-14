@@ -5,6 +5,7 @@ import icons from "./icons";
 import { formatPeso, formatPesoFull } from "./money";
 import Recap from "./Recap";
 import { buildRecap } from "./recapData";
+import { forecastForRecap } from "./forecast";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -26,12 +27,17 @@ const formatTime = (iso) =>
     minute: "2-digit",
   });
 
-export default function Gallery({ entries, onNavigate, onDelete, onEdit, onOpenSettings }) {
+export default function Gallery({ entries, settings, forecasts, onNavigate, onDelete, onEdit, onOpenSettings }) {
   const [selected, setSelected] = useState(null);
   const [viewing, setViewing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [recapOpen, setRecapOpen] = useState(false);
   const recap = useMemo(() => buildRecap(entries, new Date()), [entries]);
+  // The 3-month forecast shown on the recap's "Budgey says" slide, if this is a forecast month
+  const forecast = useMemo(
+    () => forecastForRecap(recap, forecasts, settings),
+    [recap, forecasts, settings]
+  );
 
   // Group photos by month, newest first
   const groups = useMemo(() => {
@@ -202,7 +208,7 @@ export default function Gallery({ entries, onNavigate, onDelete, onEdit, onOpenS
 
       <BottomNav active="gallery" onNavigate={onNavigate} />
       {recapOpen && recap && (
-      <Recap recap={recap} onClose={() => setRecapOpen(false)} />
+      <Recap recap={recap} forecast={forecast} onClose={() => setRecapOpen(false)} />
 )}
 
       {/* Details card */}

@@ -72,7 +72,7 @@ class ResNetClassifier:
         # 0: clothing, 1: drinks, 2: food, 3: others, 4: shoes
         self.classes = ["clothing", "drinks", "food", "others", "shoes"]
 
-        def classify(self, image: Image.Image) -> dict:
+    def classify(self, image: Image.Image) -> dict:
         img = image.convert("RGB")
         tensor = self.transform(img).unsqueeze(0)
 

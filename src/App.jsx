@@ -4,7 +4,8 @@ import PhotoTag from "./Phototag";
 import Gallery from "./Gallery";
 import Settings from "./Settings";
 import { classifyForTag } from "./api";
-import { loadSettings, saveSettings } from "./settingsStore";
+import { loadSettings, oldestEntryDate, saveSettings } from "./settingsStore";
+import { useForecasts } from "./useForecasts";
 
 const STORAGE_KEY = "budgey:entries";
 
@@ -41,7 +42,15 @@ export default function App() {
   const classifyId = useRef(0);
   const [editing, setEditing] = useState(null);
   const [entries, setEntries] = useState(loadEntries);
-  const [settings, setSettings] = useState(loadSettings);
+  // startedAt is set once. People who already have entries get it from their
+  // oldest one the first time the app opens; new users get it on their first save.
+  const [settings, setSettings] = useState(() => {
+    const saved = loadSettings();
+    return saved.startedAt
+      ? saved
+      : { ...saved, startedAt: oldestEntryDate(loadEntries()) };
+  });
+  const forecasts = useForecasts(entries, settings);
 
   // New photo: open the tag screen right away, and ask the classifier for a
   // category in the background. If the backend is off or fails, the user just
@@ -77,15 +86,17 @@ export default function App() {
 
   const saveEntry = async (entry) => {
     const photo = await shrinkPhoto(entry.photo);
+    const createdAt = new Date().toISOString();
     setEntries((prev) => [
       {
         ...entry,
         photo,
         id: Date.now().toString(36) + Math.random().toString(36).slice(2),
-        createdAt: new Date().toISOString(),
+        createdAt,
       },
       ...prev,
     ]);
+    setSettings((s) => (s.startedAt ? s : { ...s, startedAt: createdAt }));
     setPendingPhoto(null);
     setScreen("gallery");
   };
@@ -149,6 +160,8 @@ export default function App() {
     return (
       <Gallery
         entries={entries}
+        settings={settings}
+        forecasts={forecasts}
         onNavigate={setScreen}
         onDelete={deleteEntry}
         onEdit={setEditing}

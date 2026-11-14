@@ -5,6 +5,9 @@
 //   targetWeekly   the average weekly spending the user wants to stay under,
 //                  in pesos, or null when they have not set one. The forecast
 //                  is compared against it.
+//   startedAt      when the user started (ISO date string), or null before the
+//                  first entry. It is set once and never recomputed, so
+//                  deleting old entries does not move the forecast schedule.
 
 import { MAX_WHOLE_DIGITS } from "./money";
 
@@ -17,12 +20,34 @@ export const validTarget = (value) => {
   return Number.isFinite(n) && n > 0 ? n : null;
 };
 
+// A usable start date is a string that parses as a date. Anything else means "not set".
+export const validStartedAt = (value) =>
+  typeof value === "string" && value !== "" && !Number.isNaN(new Date(value).getTime())
+    ? value
+    : null;
+
+// createdAt of the oldest entry (ISO string), or null when there are none.
+// Used once, for people who already have entries before startedAt existed.
+export function oldestEntryDate(entries) {
+  let oldest = null;
+  for (const e of entries ?? []) {
+    if (!e?.createdAt) continue;
+    const t = new Date(e.createdAt).getTime();
+    if (!Number.isNaN(t) && (oldest === null || t < oldest)) oldest = t;
+  }
+  return oldest === null ? null : new Date(oldest).toISOString();
+}
+
 export function loadSettings() {
   try {
     const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY));
-    return { ...raw, targetWeekly: validTarget(raw?.targetWeekly) };
+    return {
+      ...raw,
+      targetWeekly: validTarget(raw?.targetWeekly),
+      startedAt: validStartedAt(raw?.startedAt),
+    };
   } catch {
-    return { targetWeekly: null };
+    return { targetWeekly: null, startedAt: null };
   }
 }
 

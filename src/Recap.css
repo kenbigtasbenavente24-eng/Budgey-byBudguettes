@@ -445,6 +445,49 @@
 }
 .rs__message em { font-style: normal; color: var(--orange); }
 
+/* 3-month forecast under the message (forecast months only) */
+.rs__says--note { gap: 14px; }
+.rs__says--note .rs__message { font-size: clamp(19px, 3.1dvh, 26px); }
+@media (max-height: 600px) {
+  .rs__says--note { gap: 10px; }
+  .rs__says--note .rs__message { font-size: 17px; }
+  .rs__forecast { padding: 10px 14px; }
+  .rs__forecast-text { font-size: 14px; }
+}
+.rs__forecast {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(244, 239, 227, 0.08);
+  border: 1px solid rgba(244, 239, 227, 0.14);
+}
+.rs__forecast-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--orange);
+}
+.rs__forecast-text {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.rs__forecast-text em { font-style: normal; color: var(--orange); font-weight: 600; }
+.rs__forecast-range {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.7;
+}
+.rs__forecast--hint {
+  font-size: 13px;
+  line-height: 1.4;
+  opacity: 0.8;
+}
+
 .rs__actions {
   display: flex;
   flex-direction: column;

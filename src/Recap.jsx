@@ -215,7 +215,45 @@ function TrendSlide({ recap }) {
   );
 }
 
-function SaysSlide({ recap, onClose }) {
+// The 3-month forecast, shown under the message on forecast months.
+// `forecast` comes from forecastForRecap(): ready, needs_target, pending or null.
+// "pending" (the backend was down) shows nothing; it is retried on the next app open.
+function ForecastNote({ forecast }) {
+  if (forecast?.state === "needs_target") {
+    return (
+      <p className="rs__forecast rs__forecast--hint">
+        Set a target weekly spending in Settings to see your 3-month forecast here.
+      </p>
+    );
+  }
+  if (forecast?.state !== "ready") return null;
+
+  const r = forecast.record.result;
+  const weeks = r.forecast.length;
+  const span = `the next ${weeks === 1 ? "week" : `${weeks} weeks`}`;
+  const avg = peso(Math.round(r.forecast_avg_weekly));
+  const target = peso(Math.round(r.target_weekly));
+  const warn = r.verdict === "warn";
+
+  return (
+    <div className="rs__forecast">
+      <span className="rs__forecast-label">LOOKING AHEAD</span>
+      <p className="rs__forecast-text">
+        {warn ? "At this pace you could spend about " : "You're on pace to spend about "}
+        <em>{avg}</em> a week over {span}
+        {warn
+          ? `, above your ${target} target.`
+          : `, within your ${target} target. Keep it up!`}
+      </p>
+      <p className="rs__forecast-range">
+        Likely range {peso(Math.round(r.lower))} – {peso(Math.round(r.upper))} a week
+        {r.method === "moving_average" && " · early estimate from your recent weeks"}
+      </p>
+    </div>
+  );
+}
+
+function SaysSlide({ recap, forecast, onClose }) {
   const [status, setStatus] = useState("idle"); // idle | working | downloaded | error
 
   const share = async () => {
@@ -240,13 +278,15 @@ function SaysSlide({ recap, onClose }) {
     <div className="rs rs--dark rs--says">
       <span className="chip chip--orange">BUDGEY SAYS</span>
 
-      <div className="rs__says">
+      {/* With a forecast note under it the message gets a bit smaller, so it all fits on short phones */}
+      <div className={`rs__says${forecast?.state === "ready" || forecast?.state === "needs_target" ? " rs__says--note" : ""}`}>
         <span className="rs__avatar" aria-hidden="true">b.</span>
         <p className="rs__message rs__rise">
           {recap.message.map((part, i) =>
             part.hl ? <em key={i}>{part.hl}</em> : <span key={i}>{part.text}</span>
           )}
         </p>
+        <ForecastNote forecast={forecast} />
       </div>
 
       <div className="rs__actions">
@@ -263,7 +303,7 @@ function SaysSlide({ recap, onClose }) {
 
 /* ---------- the story player ---------- */
 
-export default function Recap({ recap, onClose }) {
+export default function Recap({ recap, forecast, onClose }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [autoplay] = useState(() => !prefersReducedMotion());
@@ -298,7 +338,7 @@ export default function Recap({ recap, onClose }) {
     <FavoriteSlide key="favorite" recap={recap} />,
     <BreakdownSlide key="breakdown" recap={recap} />,
     <TrendSlide key="trend" recap={recap} />,
-    <SaysSlide key="says" recap={recap} onClose={onClose} />,
+    <SaysSlide key="says" recap={recap} forecast={forecast} onClose={onClose} />,
   ];
 
   return (

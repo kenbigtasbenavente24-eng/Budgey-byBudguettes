@@ -41,6 +41,18 @@ export async function classifyForTag(dataUrl) {
   return { category: MODEL_TO_APP_CATEGORY[category] ?? null, confidence };
 }
  
+// Ask the backend for the 4-week spending forecast. `body` comes from
+// buildForecastRequest() in forecast.js: { weekly_totals, horizon, target_weekly }.
+// Returns { method, weeks_used, forecast, forecast_avg_weekly, lower, upper,
+// target_weekly, verdict } where verdict is "warn" or "keep_it_up".
+export function getForecast(body) {
+  return request("/v1/forecast", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
 // Compare an embedding with stored ones: candidates = [{ id, embedding }].
 // Returns { matched, matches: [{ id, score }], threshold }.
 export function matchEmbedding(embedding, candidates, { topK = 3 } = {}) {

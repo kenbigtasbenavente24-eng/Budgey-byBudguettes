@@ -36,7 +36,11 @@ const dayDiff = (a, b) =>
 // Every forecast date that has arrived by `now`, oldest first.
 // `startedAt` is when the user started (their first entry), as a date or ISO string.
 export function dueDates(startedAt, now = new Date()) {
-  const start = monthStart(new Date(startedAt));
+  const started = new Date(startedAt);
+  // No start date yet (or an unreadable one): nothing is due. Without this,
+  // null would be read as 1970 and every quarter since then would be "due".
+  if (!startedAt || Number.isNaN(started.getTime())) return [];
+  const start = monthStart(started);
   const dates = [];
   for (let k = 1; k < 200; k++) {
     const due = monthStart(start, FORECAST_MONTHS * k);
@@ -83,6 +87,23 @@ export function weeklyTotals(entries, startedAt, due) {
     ),
     total: Math.round(total * 100) / 100,
   }));
+}
+
+// The forecast that belongs to a monthly recap, for the "Budgey says" slide.
+// A recap is about the month that just ended, so its forecast is the one due
+// on the 1st of the month after that (the current month). `forecasts` are the
+// saved ones, keyed by date key. Returns:
+//   { state: "ready", record }   a saved forecast to show
+//   { state: "needs_target" }    due, but the user has not set a target
+//   { state: "pending" }         due, but not generated yet (backend was down)
+//   null                         not a forecast month
+export function forecastForRecap(recap, forecasts, { startedAt, targetWeekly } = {}, now = new Date()) {
+  if (!recap) return null;
+  const key = toDateKey(new Date(recap.year, recap.month, 1));
+  if (forecasts?.[key]) return { state: "ready", record: forecasts[key] };
+  const isDue = dueDates(startedAt, now).some((d) => toDateKey(d) === key);
+  if (!isDue) return null;
+  return { state: targetWeekly ? "pending" : "needs_target" };
 }
 
 // The body for POST /v1/forecast
