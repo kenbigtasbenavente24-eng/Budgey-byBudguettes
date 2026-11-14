@@ -115,42 +115,69 @@ function favorite(items) {
 const pctChange = (now, before) =>
   before > 0 ? Math.round(((now - before) / before) * 100) : null;
 
-// The "Budgey says" sentence, as segments so the category can be highlighted
-function buildMessage({ month, topCategory, spendChange, snapChange, hasPrevious }) {
-  const parts = [];
-  if (!hasPrevious) {
-    parts.push({ text: `Great start in ${month}! ` });
-    parts.push({ hl: topCategory });
-    parts.push({
-      text: " was your biggest focus. Keep logging and next month we can show how you grow.",
-    });
-    return parts;
-  }
+// ---- Reasons: Need / Reward / Want ----
+// Only Want + Reward are judged, against this guide (% of the month's logged spending).
+// Needs still show in the pie, but are never judged: Budgey won't catch every need
+// (transport, bills, ...), so a "need share" would not be reliable.
+const REASONS = ["Need", "Reward", "Want"];
+export const WANT_REWARD_GUIDE = 30;
 
-  if (snapChange !== null && snapChange > 10) {
-    parts.push({ text: `You kept the snaps coming in ${month}! ` });
-  } else if (snapChange !== null && snapChange < -10) {
-    parts.push({ text: `${month} was a quieter month for logging. ` });
-  } else {
-    parts.push({ text: `Your ${month} logging habit was super steady! ` });
-  }
-  parts.push({ hl: topCategory });
-  if (spendChange !== null && spendChange > 10) {
-    parts.push({
-      text: ` remained your highest focus, but overall spending rose ${spendChange}% from last month. Worth a look!`,
-    });
-  } else if (spendChange !== null && spendChange < -10) {
-    parts.push({
-      text: ` remained your highest focus, and you spent ${Math.abs(spendChange)}% less than last month. Nice work!`,
-    });
-  } else {
-    parts.push({
-      text: " remained your highest focus while overall spending stayed well managed.",
-    });
-  }
-  return parts;
+const sharePct = (part, all) => (all > 0 ? Math.round((part / all) * 100) : 0);
+
+// Pie data and the 30% verdict for one month. Entries without a known reason are
+// left out. Returns null when no entry has a reason.
+function reasonSummary(items) {
+  const totals = { Need: 0, Reward: 0, Want: 0 };
+  items.forEach((e) => {
+    if (e.reason in totals) totals[e.reason] += e.amount;
+  });
+  const all = REASONS.reduce((t, r) => t + totals[r], 0);
+  if (all === 0) return null;
+
+  // Want + Reward first, so their slices sit together from the top of the pie
+  const slices = ["Want", "Reward", "Need"].map((name) => ({
+    name,
+    amount: totals[name],
+    pct: sharePct(totals[name], all),
+  }));
+
+  const wantReward = sharePct(totals.Want + totals.Reward, all);
+  const verdict =
+    wantReward < WANT_REWARD_GUIDE ? "under" : wantReward > WANT_REWARD_GUIDE ? "over" : "equal";
+
+  return { slices, wantReward, verdict };
 }
 
+// The "Budgey says" sentence, as segments so the reasons can be highlighted.
+// It is about WHY the person spent. The top category already has its own slide.
+function buildMessage({ month, summary, prevSummary }) {
+  const { wantReward, verdict } = summary;
+  const parts = [
+    { text: `In ${month}, your ` },
+    { hl: "Wants and Rewards" },
+    { text: ` were ${wantReward}% of your spending. ` },
+  ];
+
+  if (verdict === "under") {
+    parts.push({ text: `That's under the ${WANT_REWARD_GUIDE}% guide. Great control!` });
+  } else if (verdict === "equal") {
+    parts.push({ text: `That's right on the ${WANT_REWARD_GUIDE}% guide. Well balanced!` });
+  } else {
+    parts.push({ text: `That's over the ${WANT_REWARD_GUIDE}% guide. Worth a pause before the next buy!` });
+  }
+
+  // How it moved compared with last month (only when last month has reasons and it moved a lot)
+  if (prevSummary) {
+    const diff = wantReward - prevSummary.wantReward;
+    if (diff >= 10) {
+      parts.push({ text: ` Up from ${prevSummary.wantReward}% last month.` });
+    } else if (diff <= -10) {
+      parts.push({ text: ` Down from ${prevSummary.wantReward}% last month. Nice!` });
+    }
+  }
+
+  return parts;
+}
 // The monthly recap is about the month that just ended: from Jan 1 it is
 // December, from Mar 1 it is February, and so on. It stays that month until
 // the next 1st. Returns null when that month has no entries, so there is
@@ -174,6 +201,8 @@ export function buildRecap(entries, now = new Date()) {
   const snapChange = pctChange(snaps, before.length);
   const spendChange = pctChange(total, sum(before));
   const hasPrevious = before.length > 0;
+  const reasons = reasonSummary(items);
+  const prevReasons = before.length ? reasonSummary(before) : null;
 
   return {
     month: target.m + 1, // 1 to 12
@@ -187,12 +216,11 @@ export function buildRecap(entries, now = new Date()) {
     hasPrevious,
     snapChange, // % change in logged snaps vs last month (null if no data)
     spendChange,
+    reasons, // { slices, wantReward, verdict } for the pie on the Budgey says slide (null if no reasons)
     message: buildMessage({
       month: FULL_MONTHS[target.m],
-      topCategory,
-      spendChange,
-      snapChange,
-      hasPrevious,
+      summary: reasons,
+      prevSummary: prevReasons,
     }),
   };
 }

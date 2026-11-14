@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { peso } from "./recapData";
+import { peso, WANT_REWARD_GUIDE } from "./recapData";
 import { shareRecapCard } from "./recapShare";
 import "./Recap.css";
 
@@ -215,6 +215,86 @@ function TrendSlide({ recap }) {
   );
 }
 
+// Pie (donut) of the month's spending by reason. Want + Reward start at the top, so the
+// tick at 30% shows whether they stay under the guide. The centre shows their combined share.
+const REASON_COLORS = { Want: "#c47a1c", Reward: "#8c6b3f", Need: "#1b7a3c" };
+
+function ReasonPie({ reasons }) {
+  const { slices, wantReward, verdict } = reasons;
+  const R = 36;
+  const C = 2 * Math.PI * R;
+  const total = slices.reduce((t, x) => t + x.amount, 0);
+  const shown = slices.filter((x) => x.amount > 0);
+  const gap = shown.length > 1 ? 1.2 : 0; // small gap between slices
+
+  let used = 0;
+  const arcs = shown.map((x) => {
+    const len = (x.amount / total) * C;
+    const arc = { ...x, len: Math.max(0, len - gap), offset: -used };
+    used += len;
+    return arc;
+  });
+
+  // The 30% guide, as a tick across the ring (angle is measured from the top, clockwise)
+  const a = (WANT_REWARD_GUIDE / 100) * 2 * Math.PI;
+  const tick = (r) => [50 + r * Math.sin(a), 50 - r * Math.cos(a)];
+  const [x1, y1] = tick(R - 11);
+  const [x2, y2] = tick(R + 11);
+
+  const verdictWord = { under: "under", equal: "right on", over: "over" }[verdict];
+  const label =
+    "Spending by reason: " +
+    slices.map((x) => `${x.name} ${x.pct}%`).join(", ") +
+    `. Wants and rewards together are ${wantReward}%, ${verdictWord} the ${WANT_REWARD_GUIDE}% guide.`;
+
+  return (
+    <div className="rs__pie rs__rise">
+      <svg className="rs__pie-svg" viewBox="0 0 100 100" role="img" aria-label={label}>
+        <g transform="rotate(-90 50 50)">
+          <circle cx="50" cy="50" r={R} fill="none" stroke="rgba(244,239,227,0.12)" strokeWidth="15" />
+          {arcs.map((x) => (
+            <circle
+              key={x.name}
+              cx="50"
+              cy="50"
+              r={R}
+              fill="none"
+              stroke={REASON_COLORS[x.name]}
+              strokeWidth="15"
+              strokeDasharray={`${x.len} ${C - x.len}`}
+              strokeDashoffset={x.offset}
+            />
+          ))}
+        </g>
+        <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        <text x="50" y="49" textAnchor="middle" fontSize="17" fontWeight="700" fill="currentColor">
+          {wantReward}%
+        </text>
+        <text x="50" y="58" textAnchor="middle" fontSize="6.5" fill="currentColor" opacity="0.75">
+          wants +
+        </text>
+        <text x="50" y="65.5" textAnchor="middle" fontSize="6.5" fill="currentColor" opacity="0.75">
+          rewards
+        </text>
+      </svg>
+
+      <ul className="rs__pie-legend" aria-hidden="true">
+        {slices.map((x) => (
+          <li key={x.name}>
+            <i style={{ background: REASON_COLORS[x.name] }} />
+            {x.name}
+            <b>{x.pct}%</b>
+          </li>
+        ))}
+        <li className="rs__pie-guide">
+          <i className="rs__pie-tick" />
+          {WANT_REWARD_GUIDE}% guide
+        </li>
+      </ul>
+    </div>
+  );
+}
+
 // The 3-month forecast, shown under the message on forecast months.
 // `forecast` comes from forecastForRecap(): ready, needs_target, pending or null.
 // "pending" (the backend was down) shows nothing; it is retried on the next app open.
@@ -286,6 +366,7 @@ function SaysSlide({ recap, forecast, onClose }) {
             part.hl ? <em key={i}>{part.hl}</em> : <span key={i}>{part.text}</span>
           )}
         </p>
+        {recap.reasons && <ReasonPie reasons={recap.reasons} />}
         <ForecastNote forecast={forecast} />
       </div>
 

@@ -445,6 +445,72 @@
 }
 .rs__message em { font-style: normal; color: var(--orange); }
 
+/* Reason pie under the Budgey says message */
+.rs__pie {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.rs__pie-svg {
+  flex: none;
+  width: clamp(92px, 15dvh, 128px);
+  height: auto;
+  color: var(--fg);
+}
+.rs__pie-legend {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+.rs__pie-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rs__pie-legend i {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.rs__pie-legend b {
+  margin-left: auto;
+  font-weight: 600;
+}
+.rs__pie-guide {
+  margin-top: 2px;
+  font-size: 11px;
+  opacity: 0.7;
+}
+.rs__pie-legend .rs__pie-tick {
+  width: 2px;
+  height: 11px;
+  margin: 0 4px;
+  border-radius: 2px;
+  background: var(--fg);
+}
+/* Short phones: shrink things so the message, pie, forecast note and buttons all fit */
+@media (max-height: 700px) {
+  .rs--says .rs__avatar { width: 40px; height: 40px; font-size: 20px; }
+  .rs--says .rs__message { font-size: 20px; }
+  .rs__pie { gap: 12px; }
+  .rs__pie-svg { width: 76px; }
+  .rs__pie-legend { gap: 4px; font-size: 12px; }
+}
+@media (max-height: 620px) {
+  .rs__pie-svg { width: 66px; }
+  .rs__pie-legend .rs__pie-guide { display: none; }
+}
+/* Forecast months have one more card, so short phones drop the avatar (the chip already says who is talking) */
+@media (max-height: 690px) {
+  .rs__says--note .rs__avatar { display: none; }
+}
+
 /* 3-month forecast under the message (forecast months only) */
 .rs__says--note { gap: 14px; }
 .rs__says--note .rs__message { font-size: clamp(19px, 3.1dvh, 26px); }
@@ -486,6 +552,16 @@
   font-size: 13px;
   line-height: 1.4;
   opacity: 0.8;
+}
+
+/* Very small phones (about 570px tall) in forecast months */
+@media (max-height: 580px) {
+  .rs__says--note { gap: 6px; }
+  .rs__says--note .rs__message { font-size: 16px; }
+  .rs__says--note .rs__pie-svg { width: 56px; }
+  .rs__says--note .rs__forecast { padding: 8px 12px; }
+  .rs__says--note .rs__forecast-label { margin-bottom: 3px; }
+  .rs__says--note .rs__forecast-text { font-size: 13px; }
 }
 
 .rs__actions {
