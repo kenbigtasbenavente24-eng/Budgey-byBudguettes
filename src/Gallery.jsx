@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import BottomNav from "./Bottomnav";
 import "./Gallery.css";
 import icons from "./icons";
 import { formatPeso, formatPesoFull } from "./money";
@@ -104,17 +103,22 @@ export default function Gallery({ entries, settings, forecasts, onNavigate, onDe
       <header className="gallery__head">
         <div className="gallery__titlebar">
           <h1 className="gallery__title">Spending Summary</h1>
-          <button
-            className="gallery__settings"
-            onClick={onOpenSettings}
-            aria-label="Settings"
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
-          </button>
+          <div className="gallery__actions">
+            <button
+              className="gallery__add"
+              onClick={() => onNavigate("camera")}
+              aria-label="Take a photo"
+            >
+              <img src={icons.addPhoto} width="22" height="22" alt="" />
+            </button>
+            <button
+              className="gallery__settings"
+              onClick={onOpenSettings}
+              aria-label="Settings"
+            >
+              <img src={icons.settings} width="26" height="26" alt="" />
+            </button>
+          </div>
         </div>
 
         <p className="gallery__label">Total Spending</p>
@@ -206,7 +210,6 @@ export default function Gallery({ entries, settings, forecasts, onNavigate, onDe
         )}
       </section>
 
-      <BottomNav active="gallery" onNavigate={onNavigate} />
       {recapOpen && recap && (
       <Recap recap={recap} forecast={forecast} onClose={() => setRecapOpen(false)} />
 )}

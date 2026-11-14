@@ -45,12 +45,18 @@
   font-size: 19px;
   font-weight: 600;
 }
-.gallery__settings {
+.gallery__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: -6px -8px -6px 0;  /* keeps the header height, lines the icons up with the edge */
+}
+.gallery__settings,
+.gallery__add {
   display: grid;
   place-items: center;
   width: 36px;
   height: 36px;
-  margin: -6px -8px -6px 0;  /* keeps the header height, lines the icon up with the edge */
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -58,6 +64,7 @@
   color: var(--ink);
   cursor: pointer;
 }
+.gallery__add:active,
 .gallery__settings:active {
   background: #e6dfd2;
 }
