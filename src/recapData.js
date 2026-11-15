@@ -149,35 +149,39 @@ function reasonSummary(items) {
 }
 
 // The "Budgey says" sentence, as segments so the reasons can be highlighted.
-// It is about WHY the person spent. The top category already has its own slide.
+// The ending is picked from two things at once: where the month sits against the guide
+// (under / equal / over) and how it moved since last month (only moves of 10 points
+// or more are mentioned), so the praise and the warning never contradict each other.
 function buildMessage({ month, summary, prevSummary }) {
   const { wantReward, verdict } = summary;
-  const parts = [
+  const G = WANT_REWARD_GUIDE;
+
+  const prev = prevSummary?.wantReward;
+  const diff = prevSummary ? wantReward - prev : 0;
+  const down = diff <= -10;
+  const up = diff >= 10;
+
+  let ending;
+  if (verdict === "over") {
+    if (down) ending = `Over the ${G}% guide, but down from ${prev}% last month. Nice progress!`;
+    else if (up) ending = `Over the ${G}% guide and up from ${prev}% last month. Worth a pause!`;
+    else ending = `That's over the ${G}% guide. Worth a pause before the next buy!`;
+  } else {
+    const where = verdict === "equal" ? "right on" : "under";
+    const praise = verdict === "equal" ? "Well balanced!" : "Great control!";
+    if (up) ending = `That's ${where} the ${G}% guide, but up from ${prev}% last month. Keep an eye on it!`;
+    else if (down) ending = `That's ${where} the ${G}% guide, and down from ${prev}% last month. ${praise}`;
+    else ending = `That's ${where} the ${G}% guide. ${praise}`;
+  }
+
+  return [
     { text: `In ${month}, your ` },
     { hl: "Wants and Rewards" },
     { text: ` were ${wantReward}% of your spending. ` },
+    { text: ending },
   ];
-
-  if (verdict === "under") {
-    parts.push({ text: `That's under the ${WANT_REWARD_GUIDE}% guide. Great control!` });
-  } else if (verdict === "equal") {
-    parts.push({ text: `That's right on the ${WANT_REWARD_GUIDE}% guide. Well balanced!` });
-  } else {
-    parts.push({ text: `That's over the ${WANT_REWARD_GUIDE}% guide. Worth a pause before the next buy!` });
-  }
-
-  // How it moved compared with last month (only when last month has reasons and it moved a lot)
-  if (prevSummary) {
-    const diff = wantReward - prevSummary.wantReward;
-    if (diff >= 10) {
-      parts.push({ text: ` Up from ${prevSummary.wantReward}% last month.` });
-    } else if (diff <= -10) {
-      parts.push({ text: ` Down from ${prevSummary.wantReward}% last month. Nice!` });
-    }
-  }
-
-  return parts;
 }
+
 // The monthly recap is about the month that just ended: from Jan 1 it is
 // December, from Mar 1 it is February, and so on. It stays that month until
 // the next 1st. Returns null when that month has no entries, so there is

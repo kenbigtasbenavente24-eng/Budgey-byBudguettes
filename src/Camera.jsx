@@ -70,8 +70,8 @@ export default function Camera({ onCapture, onOpenGallery, latestPhoto }) {
     const vw = video.videoWidth;
     const vh = video.videoHeight;
 
-    // Crop to 4:5 so the photo matches the viewfinder box
-    const ratio = 4 / 5;
+    // Crop to 3:4 so the photo matches the viewfinder box
+    const ratio = 3 / 4;
     let sw = vw;
     let sh = vh;
     if (vw / vh > ratio) sw = vh * ratio;
@@ -130,17 +130,6 @@ export default function Camera({ onCapture, onOpenGallery, latestPhoto }) {
             muted
           />
         )}
-
-        {/* Rule-of-thirds grid */}
-        <div className="viewfinder__grid" aria-hidden="true">
-          <span /> <span /> <span /> <span />
-        </div>
-
-        {/* Corner brackets */}
-        <i className="corner corner--tl" aria-hidden="true" />
-        <i className="corner corner--tr" aria-hidden="true" />
-        <i className="corner corner--bl" aria-hidden="true" />
-        <i className="corner corner--br" aria-hidden="true" />
 
         <p className="viewfinder__hint">One item at a time</p>
       </section>
