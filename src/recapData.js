@@ -2,6 +2,8 @@
 // Turns the list of entries into the numbers the Budgey Recap slides show.
 // Pure functions only (no React), so they are easy to test.
 
+import { normalizeCategory } from "./categories.js"; // ".js" so this file still runs in plain Node
+
 export const peso = (n) =>
   "₱" +
   Number(n).toLocaleString("en-PH", {
@@ -13,13 +15,6 @@ const SHORT_MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
-
-// Entries saved before the Food + Drinks merge still say "Food"
-const normalizeCategory = (c) => {
-  const name = (c || "").trim();
-  if (!name || name.toLowerCase() === "food") return "Food & Drinks";
-  return name;
-};
 
 const FULL_MONTHS = [
   "January", "February", "March", "April", "May", "June",

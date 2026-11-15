@@ -5,6 +5,7 @@ import { formatPeso, formatPesoFull } from "./money";
 import Recap from "./Recap";
 import { buildRecap } from "./recapData";
 import { forecastForRecap } from "./forecast";
+import { normalizeCategory } from "./categories";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -68,7 +69,8 @@ export default function Gallery({ entries, settings, forecasts, onNavigate, onDe
     entries.forEach((e) => {
       total += e.amount;
       if (e.reason in byReason) byReason[e.reason] += e.amount;
-      byCategory[e.category] = (byCategory[e.category] || 0) + e.amount;
+      const category = normalizeCategory(e.category); // same names as the Recap
+      byCategory[category] = (byCategory[category] || 0) + e.amount;
     });
 
     const top =

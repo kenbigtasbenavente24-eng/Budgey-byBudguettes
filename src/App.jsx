@@ -4,6 +4,7 @@ import PhotoTag from "./Phototag";
 import Gallery from "./Gallery";
 import Settings from "./Settings";
 import { classifyForTag } from "./api";
+import { migrateEntries } from "./categories";
 import { loadSettings, oldestEntryDate, saveSettings } from "./settingsStore";
 import { useForecasts } from "./useForecasts";
 
@@ -12,7 +13,9 @@ const STORAGE_KEY = "budgey:entries";
 function loadEntries() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    // Old category names (Clothes, Apparel, Drinks) are renamed on load; the
+    // save effect below then writes the renamed entries back.
+    return raw ? migrateEntries(JSON.parse(raw)) : [];
   } catch {
     return [];
   }

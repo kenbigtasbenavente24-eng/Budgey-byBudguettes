@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import "./Phototag.css";
+import { CATEGORIES as LISTED_CATEGORIES, OTHER } from "./categories";
 
-const CATEGORIES = ["Beverages", "Footwear", "Clothing", "Food", "Other"];
+// The dropdown: the listed categories, then "Other" (opens the type-your-own box)
+const CATEGORIES = [...LISTED_CATEGORIES, OTHER];
 
 // What the category box shows when the model is sure it is none of the above
-const OTHER_CATEGORY = "Other";
+const OTHER_CATEGORY = OTHER;
 
 // Most digits before the decimal point: 7 digits = up to ₱9,999,999
 const MAX_WHOLE_DIGITS = 7;
@@ -202,7 +204,7 @@ export default function PhotoTag({
 
   const chooseCategory = (c) => {
     setAutofilled(false); // the user picked this one themselves
-    if (c === "Other") {
+    if (c === OTHER) {
       setOtherMode(true);
       setCategory("");
     } else {
