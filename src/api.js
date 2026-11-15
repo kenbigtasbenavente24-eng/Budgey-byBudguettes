@@ -1,5 +1,7 @@
 // Talks to the Budgey backend (FastAPI). The backend is stateless: it never
 // stores photos or embeddings, so the app keeps those in the browser/device.
+import { MODEL_CLASS_TO_CATEGORY } from "./categories";
+
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
  
 async function request(path, options) {
@@ -21,16 +23,6 @@ export async function classifyPhoto(dataUrl) {
   return request("/v1/classify", { method: "POST", body: form });
 }
  
-// The model's classes -> the category names used in the tag form.
-// "others" is left out on purpose: no suggestion, the user picks.
-// These names must match the dropdown list in Phototag.jsx.
-const MODEL_TO_APP_CATEGORY = {
-  clothing: "Clothing",
-  shoes: "Footwear",
-  food: "Food",
-  drinks: "Beverages",
-};
- 
 // What the tag screen needs from the classifier:
 //   category    app category to fill in, or null when there is nothing to suggest
 //   confidence  0 to 1
@@ -39,7 +31,7 @@ const MODEL_TO_APP_CATEGORY = {
 export async function classifyForTag(dataUrl) {
   const { category, confidence } = await classifyPhoto(dataUrl);
   return {
-    category: MODEL_TO_APP_CATEGORY[category] ?? null,
+    category: MODEL_CLASS_TO_CATEGORY[category] ?? null, // names come from categories.js
     others: category === "others", // the model says: none of the listed categories
     confidence,
   };
