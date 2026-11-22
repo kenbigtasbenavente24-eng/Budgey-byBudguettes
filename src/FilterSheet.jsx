@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./FilterSheet.css";
 import {
   EMPTY_FILTER,
@@ -6,37 +6,66 @@ import {
   countActive,
   monthOptions,
   reasonOptions,
+  showYearFilter,
+  yearOptions,
 } from "./galleryFilter";
 
-// One group of chips. Tapping the chosen chip again goes back to "All".
-function ChipGroup({ id, title, options, value, onPick }) {
-  if (options.length === 0) return null;
+// One dropdown row: shows the chosen value, opens a list of options inline.
+// Options are { value, label, dot?, disabled? }. "All" (null) is always first.
+function Dropdown({ id, title, options, value, open, onToggle, onPick }) {
+  const chosen = options.find((o) => o.value === value);
+  const label = chosen ? chosen.label : "All";
+  const menuId = `fsheet-menu-${id}`;
+
+  const pick = (next) => {
+    onPick(next);
+    onToggle(); // close this dropdown
+  };
+
   return (
-    <section className="fsheet__section" aria-labelledby={`fsheet-${id}`}>
-      <h3 id={`fsheet-${id}`}>{title}</h3>
-      <div className="fsheet__chips">
-        <button
-          type="button"
-          className="fsheet__chip"
-          aria-pressed={value === null}
-          onClick={() => onPick(null)}
-        >
-          All
-        </button>
-        {options.map((o) => (
+    <div className="fsheet__dd" data-open={open} data-active={value !== null}>
+      <button
+        type="button"
+        className="fsheet__trigger"
+        aria-expanded={open}
+        aria-controls={menuId}
+        onClick={onToggle}
+      >
+        <span className="fsheet__trigger-title">{title}</span>
+        <span className="fsheet__trigger-value">
+          {chosen?.dot && <i className={`dot dot--${chosen.dot}`} aria-hidden="true" />}
+          {label}
+        </span>
+        <i className="fsheet__chevron" aria-hidden="true" />
+      </button>
+
+      {open && (
+        <div id={menuId} className="fsheet__menu" role="group" aria-label={title}>
           <button
-            key={o.value}
             type="button"
-            className="fsheet__chip"
-            aria-pressed={value === o.value}
-            onClick={() => onPick(value === o.value ? null : o.value)}
+            className="fsheet__opt"
+            aria-pressed={value === null}
+            onClick={() => pick(null)}
           >
-            {o.dot && <i className={`dot dot--${o.dot}`} aria-hidden="true" />}
-            {o.label}
+            All
           </button>
-        ))}
-      </div>
-    </section>
+          {options.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              className="fsheet__opt"
+              aria-pressed={value === o.value}
+              disabled={o.disabled}
+              onClick={() => pick(o.value)}
+            >
+              {o.dot && <i className={`dot dot--${o.dot}`} aria-hidden="true" />}
+              {o.label}
+              {o.disabled && <small>No purchases</small>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -44,6 +73,7 @@ function ChipGroup({ id, title, options, value, onPick }) {
 // behind the sheet updates while you pick.
 export default function FilterSheet({ entries, filter, resultCount, onChange, onClose }) {
   const panelRef = useRef(null);
+  const [open, setOpen] = useState(null); // which dropdown is open: "year" | "month" | ...
   const active = countActive(filter);
 
   // Move keyboard focus into the sheet when it opens
@@ -51,7 +81,21 @@ export default function FilterSheet({ entries, filter, resultCount, onChange, on
     panelRef.current?.focus();
   }, []);
 
+  // Keep a freshly opened list in view inside the scrolling sheet
+  useEffect(() => {
+    if (open) document.getElementById(`fsheet-menu-${open}`)?.scrollIntoView({ block: "nearest" });
+  }, [open]);
+
+  const toggle = (id) => () => setOpen((cur) => (cur === id ? null : id));
   const set = (key) => (value) => onChange({ ...filter, [key]: value });
+
+  // Escape closes an open dropdown first; the Gallery only sees it if none is open
+  const onKeyDown = (e) => {
+    if (e.key === "Escape" && open) {
+      e.stopPropagation();
+      setOpen(null);
+    }
+  };
 
   return (
     <div className="fsheet" onClick={onClose}>
@@ -63,6 +107,7 @@ export default function FilterSheet({ entries, filter, resultCount, onChange, on
         aria-label="Filter purchases"
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={onKeyDown}
       >
         <header className="fsheet__head">
           <h2>Filter</h2>
@@ -70,42 +115,57 @@ export default function FilterSheet({ entries, filter, resultCount, onChange, on
             <button
               type="button"
               className="fsheet__clear"
-              onClick={() => onChange(EMPTY_FILTER)}
+              onClick={() => {
+                onChange(EMPTY_FILTER);
+                setOpen(null);
+              }}
               disabled={active === 0}
             >
               Clear
             </button>
-            <button
-              type="button"
-              className="fsheet__close"
-              onClick={onClose}
-              aria-label="Close"
-            >
+            <button type="button" className="fsheet__close" onClick={onClose} aria-label="Close">
               ×
             </button>
           </div>
         </header>
 
         <div className="fsheet__body">
-          <ChipGroup
+          {showYearFilter(entries) && (
+            <Dropdown
+              id="year"
+              title="Year"
+              options={yearOptions(entries, filter)}
+              value={filter.year}
+              open={open === "year"}
+              onToggle={toggle("year")}
+              onPick={set("year")}
+            />
+          )}
+          <Dropdown
             id="month"
             title="Month"
-            options={monthOptions(entries)}
+            options={monthOptions(entries, filter)}
             value={filter.month}
+            open={open === "month"}
+            onToggle={toggle("month")}
             onPick={set("month")}
           />
-          <ChipGroup
+          <Dropdown
             id="category"
             title="Category"
-            options={categoryOptions(entries)}
+            options={categoryOptions(entries, filter)}
             value={filter.category}
+            open={open === "category"}
+            onToggle={toggle("category")}
             onPick={set("category")}
           />
-          <ChipGroup
+          <Dropdown
             id="reason"
             title="Reason"
-            options={reasonOptions(entries)}
+            options={reasonOptions(entries, filter)}
             value={filter.reason}
+            open={open === "reason"}
+            onToggle={toggle("reason")}
             onPick={set("reason")}
           />
         </div>

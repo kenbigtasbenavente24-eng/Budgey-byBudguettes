@@ -68,56 +68,132 @@
   cursor: pointer;
 }
 
-/* ---- Sections of chips ---- */
+/* ---- Dropdowns ---- */
 .fsheet__body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 8px 28px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 28px 4px;
 }
-.fsheet__section {
-  padding: 12px 0 8px;
+.fsheet__trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid #d9d0bf;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  font: 500 14px "Poppins", system-ui, sans-serif;
+  text-align: left;
+  cursor: pointer;
 }
-.fsheet__section h3 {
-  margin: 0 0 10px;
+/* A chosen value gets a darker outline so you can see what is filtering */
+.fsheet__dd[data-active="true"] .fsheet__trigger {
+  border-color: #241f1b;
+}
+.fsheet__trigger-title {
+  flex: none;
   font-size: 12px;
   font-weight: 600;
   color: var(--muted);
 }
-.fsheet__chips {
+.fsheet__trigger-value {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.fsheet__chip {
-  display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 7px;
-  max-width: 100%;
-  min-height: 34px;
-  padding: 0 14px;
-  border: 1px solid #d9d0bf;
-  border-radius: 99px;
-  background: #fff;
-  color: var(--ink);
-  font: 500 12px "Poppins", system-ui, sans-serif;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  cursor: pointer;
+  white-space: nowrap;
 }
-.fsheet__chip[aria-pressed="true"] {
-  border-color: #241f1b;
-  background: #241f1b;
-  color: #fff;
+.fsheet__dd[data-active="true"] .fsheet__trigger-value {
+  font-weight: 600;
 }
-.fsheet__chip .dot {
+.fsheet__trigger .dot {
   flex: none;
   width: 8px;
   height: 8px;
 }
-.fsheet__chip[aria-pressed="true"] .dot {
-  box-shadow: 0 0 0 1.5px #fff;
+.fsheet__chevron {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin: -3px 2px 0 0;
+  border: solid var(--muted);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  transition: transform 0.15s ease-out;
+}
+.fsheet__dd[data-open="true"] .fsheet__chevron {
+  margin: 3px 2px 0 0;
+  transform: rotate(225deg);
+}
+
+/* The open list sits right under its row, inside the scrolling sheet */
+.fsheet__menu {
+  display: flex;
+  flex-direction: column;
+  max-height: 232px;
+  margin-top: 6px;
+  overflow-y: auto;
+  border: 1px solid #d9d0bf;
+  border-radius: 12px;
+  background: #fff;
+}
+.fsheet__opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-bottom: 1px solid #efe8da;
+  background: transparent;
+  color: var(--ink);
+  font: 500 14px "Poppins", system-ui, sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+.fsheet__opt:last-child {
+  border-bottom: 0;
+}
+.fsheet__opt .dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+}
+.fsheet__opt small {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 400;
+}
+.fsheet__opt:disabled {
+  color: #b7ada0;
+  cursor: default;
+}
+/* Check mark on the chosen option */
+.fsheet__opt[aria-pressed="true"] {
+  font-weight: 600;
+  background: #f6f1e6;
+}
+.fsheet__opt[aria-pressed="true"]::after {
+  content: "";
+  flex: none;
+  width: 5px;
+  height: 10px;
+  margin: -3px 3px 0 auto;
+  border: solid var(--ink);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 /* ---- Footer button ---- */
