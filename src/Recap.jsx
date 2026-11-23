@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import ForecastChart from "./ForecastChart";
 import { peso, WANT_REWARD_GUIDE } from "./recapData";
 import { shareRecapCard } from "./recapShare";
 import "./Recap.css";
 
 const SLIDE_MS = 6000; // how long each slide stays before moving on
-const SLIDE_COUNT = 5;
+const SLIDE_MS_BY_KEY = { forecast: 10000 }; // the graph and its two notes take longer to read
 const BAR_COLORS = ["#ee9a2f", "#c47a1c", "#8c6b3f", "#1f1712", "#1b7a3c"];
 
 const prefersReducedMotion = () =>
@@ -295,45 +296,100 @@ function ReasonPie({ reasons }) {
   );
 }
 
-// The 3-month forecast, shown under the message on forecast months.
-// `forecast` comes from forecastForRecap(): ready, needs_target, pending or null.
-// "pending" (the backend was down) shows nothing; it is retried on the next app open.
-function ForecastNote({ forecast }) {
-  if (forecast?.state === "needs_target") {
-    return (
-      <p className="rs__forecast rs__forecast--hint">
-        Set a target weekly spending in Settings to see your 3-month forecast here.
-      </p>
-    );
-  }
-  if (forecast?.state !== "ready") return null;
+// The forecast slide, shown from the first forecast on (it sits before "Budgey says").
+// `forecast` comes from forecastSlideFor() in forecastChart.js, which has the
+// full story of the two modes: "first" (no earlier forecast to compare with) and
+// "review" (last month's 4-week forecast against what was spent, plus the new
+// forecast for the next 4 weeks).
+// If the user has no target yet, a hint replaces the new forecast.
+const FORECAST_TITLES = {
+  first: "Where your spending is headed",
+  review: "How the forecast did",
+};
+// How the weeks that passed compare with the forecast's likely range for the
+// weekly average (a wide band, so "within" can still be some way from the single
+// forecast number)
+const REVIEW_VERDICTS = {
+  within: "That's inside Budgey's likely range.",
+  above: "That's above Budgey's likely range.",
+  below: "That's below Budgey's likely range. Nice!",
+};
+// "1 week", "13 weeks" (and "1 WEEK", "13 WEEKS" for the capitalised captions)
+const plural = (n, word) =>
+  `${n} ${word}${n === 1 ? "" : word === word.toUpperCase() ? "S" : "s"}`;
+const pesoRound = (n) => peso(Math.round(n));
 
-  const r = forecast.record.result;
-  const weeks = r.forecast.length;
-  const span = `the next ${weeks === 1 ? "week" : `${weeks} weeks`}`;
-  const avg = peso(Math.round(r.forecast_avg_weekly));
-  const target = peso(Math.round(r.target_weekly));
-  const warn = r.verdict === "warn";
-
+function ForecastReviewCard({ review }) {
   return (
-    <div className="rs__forecast">
-      <span className="rs__forecast-label">LOOKING AHEAD</span>
-      <p className="rs__forecast-text">
-        {warn ? "At this pace you could spend about " : "You're on pace to spend about "}
-        <em>{avg}</em> a week over {span}
-        {warn
-          ? `, above your ${target} target.`
-          : `, within your ${target} target. Keep it up!`}
+    <div className="rs__fcard">
+      <span className="rs__fcard-label">
+        LAST {plural(review.weeks, "WEEK")}
+      </span>
+      <p className="rs__fcard-text">
+        You spent about <b>{pesoRound(review.actualAvg)}</b> a week; Budgey expected{" "}
+        <b>{pesoRound(review.predictedAvg)}</b>. {REVIEW_VERDICTS[review.status]}
       </p>
-      <p className="rs__forecast-range">
-        Likely range {peso(Math.round(r.lower))} – {peso(Math.round(r.upper))} a week
-        {r.method === "moving_average" && " · early estimate from your recent weeks"}
+      <p className="rs__fcard-range">
+        Likely range for your weekly average: {pesoRound(review.lower)} – {pesoRound(review.upper)}
       </p>
     </div>
   );
 }
 
-function SaysSlide({ recap, forecast, onClose }) {
+function ForecastOutlookCard({ outlook }) {
+  const warn = outlook.verdict === "warn";
+  const avg = pesoRound(outlook.avg);
+  const target = pesoRound(outlook.target);
+  return (
+    <div className="rs__fcard">
+      <span className="rs__fcard-label">NEXT {plural(outlook.weeks, "WEEK")}</span>
+      <p className="rs__fcard-text">
+        {warn ? "At this pace you could spend about " : "You're on pace to spend about "}
+        <b>{avg}</b> a week
+        {warn ? `, above your ${target} target.` : `, within your ${target} target. Keep it up!`}
+      </p>
+      <p className="rs__fcard-range">
+        Likely range for your weekly average: {pesoRound(outlook.lower)} – {pesoRound(outlook.upper)}
+        {outlook.method === "moving_average" && " · early estimate from your recent weeks"}
+      </p>
+    </div>
+  );
+}
+
+function ForecastSlide({ forecast }) {
+  const { state, mode, chart, review, outlook } = forecast;
+
+  // Captions on each side of the line where the past ends and the forecast begins
+  const past = chart.splitIndex;
+  const ahead = past === null ? 0 : chart.slots.length - past;
+  const splitLabels =
+    past === null
+      ? undefined
+      : { left: `LAST ${plural(past, "WEEK")}`, right: `NEXT ${plural(ahead, "WEEK")}` };
+
+  return (
+    <div className="rs rs--cream rs--forecast">
+      <span className="chip chip--orange">FORECAST</span>
+      <h2 className="rs__title rs__title--sm rs__rise">{FORECAST_TITLES[mode]}</h2>
+
+      <div className="rs__fchart">
+        <ForecastChart chart={chart} splitLabels={splitLabels} />
+      </div>
+
+      <div className="rs__fcards">
+        {review && <ForecastReviewCard review={review} />}
+        {outlook && <ForecastOutlookCard outlook={outlook} />}
+        {state === "needs_target" && (
+          <p className="rs__fcard rs__fcard--hint">
+            Set a target weekly spending in Settings to see your 4-week forecast here.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SaysSlide({ recap, onClose }) {
   const [status, setStatus] = useState("idle"); // idle | working | downloaded | error
 
   const share = async () => {
@@ -358,8 +414,7 @@ function SaysSlide({ recap, forecast, onClose }) {
     <div className="rs rs--dark rs--says">
       <span className="chip chip--orange">BUDGEY SAYS</span>
 
-      {/* With a forecast note under it the message gets a bit smaller, so it all fits on short phones */}
-      <div className={`rs__says${forecast?.state === "ready" || forecast?.state === "needs_target" ? " rs__says--note" : ""}`}>
+      <div className="rs__says">
         <span className="rs__avatar" aria-hidden="true">b.</span>
         <p className="rs__message rs__rise">
           {recap.message.map((part, i) =>
@@ -367,7 +422,6 @@ function SaysSlide({ recap, forecast, onClose }) {
           )}
         </p>
         {recap.reasons && <ReasonPie reasons={recap.reasons} />}
-        <ForecastNote forecast={forecast} />
       </div>
 
       <div className="rs__actions">
@@ -385,13 +439,40 @@ function SaysSlide({ recap, forecast, onClose }) {
 /* ---------- the story player ---------- */
 
 export default function Recap({ recap, forecast, onClose }) {
-  const [index, setIndex] = useState(0);
+  // The forecast slide only exists on forecast months. The current slide is kept
+  // by name, not by number, so a forecast that arrives while the recap is open
+  // cannot move the viewer to a different slide.
+  const slides = [
+    { key: "intro", node: <IntroSlide recap={recap} /> },
+    { key: "favorite", node: <FavoriteSlide recap={recap} /> },
+    { key: "breakdown", node: <BreakdownSlide recap={recap} /> },
+    { key: "trend", node: <TrendSlide recap={recap} /> },
+    ...(forecast ? [{ key: "forecast", node: <ForecastSlide forecast={forecast} /> }] : []),
+    { key: "says", node: <SaysSlide recap={recap} onClose={onClose} /> },
+  ];
+  const keys = slides.map((s) => s.key);
+  const count = slides.length;
+
+  const [currentKey, setCurrentKey] = useState("intro");
   const [paused, setPaused] = useState(false);
   const [autoplay] = useState(() => !prefersReducedMotion());
   const downAt = useRef(0);
 
+  // The key and timer handlers below are set up once, so they read the slide
+  // list through a ref to always see the current one.
+  const keysRef = useRef(keys);
+  useEffect(() => {
+    keysRef.current = keys;
+  });
+
+  const index = Math.max(0, keys.indexOf(currentKey));
+  const current = slides[index];
+
   const go = (step) =>
-    setIndex((i) => Math.min(SLIDE_COUNT - 1, Math.max(0, i + step)));
+    setCurrentKey((k) => {
+      const list = keysRef.current;
+      return list[Math.min(list.length - 1, Math.max(0, list.indexOf(k) + step))];
+    });
 
   useEffect(() => {
     const onKey = (e) => {
@@ -414,32 +495,24 @@ export default function Recap({ recap, forecast, onClose }) {
   };
   const cancel = () => setPaused(false);
 
-  const slides = [
-    <IntroSlide key="intro" recap={recap} />,
-    <FavoriteSlide key="favorite" recap={recap} />,
-    <BreakdownSlide key="breakdown" recap={recap} />,
-    <TrendSlide key="trend" recap={recap} />,
-    <SaysSlide key="says" recap={recap} forecast={forecast} onClose={onClose} />,
-  ];
-
   return (
     <div
-      className={`recap recap--${index + 1}`}
+      className={`recap recap--${current.key}`}
       role="dialog"
       aria-modal="true"
-      aria-label={`Budgey recap, slide ${index + 1} of ${SLIDE_COUNT}`}
+      aria-label={`Budgey recap, slide ${index + 1} of ${count}`}
     >
       <div className="recap__top">
         <div className="recap__bars" aria-hidden="true">
-          {Array.from({ length: SLIDE_COUNT }, (_, i) => (
-            <span key={i} className="recap__seg">
+          {slides.map((s, i) => (
+            <span key={s.key} className="recap__seg">
               {i < index && <span className="recap__fill is-done" />}
               {i === index && (
                 <span
-                  key={index}
+                  key={s.key}
                   className={`recap__fill ${autoplay ? "is-running" : "is-done"}`}
                   style={{
-                    animationDuration: `${SLIDE_MS}ms`,
+                    animationDuration: `${SLIDE_MS_BY_KEY[s.key] ?? SLIDE_MS}ms`,
                     animationPlayState: paused ? "paused" : "running",
                   }}
                   onAnimationEnd={() => go(1)}
@@ -456,8 +529,8 @@ export default function Recap({ recap, forecast, onClose }) {
         </div>
       </div>
 
-      <div className="recap__slide" key={index}>
-        {slides[index]}
+      <div className="recap__slide" key={current.key}>
+        {current.node}
       </div>
 
       {/* Invisible tap zones: left goes back, right goes forward */}

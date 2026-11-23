@@ -4,7 +4,7 @@ import icons from "./icons";
 import { formatPeso, formatPesoFull } from "./money";
 import Recap from "./Recap";
 import { buildRecap } from "./recapData";
-import { forecastForRecap } from "./forecast";
+import { forecastSlideFor } from "./forecastChart";
 import { normalizeCategory } from "./categories";
 
 const MONTHS = [
@@ -33,10 +33,10 @@ export default function Gallery({ entries, settings, forecasts, onNavigate, onDe
   const [confirming, setConfirming] = useState(false);
   const [recapOpen, setRecapOpen] = useState(false);
   const recap = useMemo(() => buildRecap(entries, new Date()), [entries]);
-  // The 3-month forecast shown on the recap's "Budgey says" slide, if this is a forecast month
+  // The recap's forecast slide (graph + notes), or null when this is not a forecast month
   const forecast = useMemo(
-    () => forecastForRecap(recap, forecasts, settings),
-    [recap, forecasts, settings]
+    () => forecastSlideFor(recap, forecasts, settings, entries),
+    [recap, forecasts, settings, entries]
   );
 
   // Group photos by month, newest first
