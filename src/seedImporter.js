@@ -10,6 +10,10 @@ const VALID_REASONS = new Map([
 const IMAGE_EXT_RE = /\.(jpe?g|png|webp|gif)$/i;
 const MONTH_FOLDER_RE = /^(\d{4})-(\d{2})$/;
 
+function stripExtension(filename) {
+  return filename.replace(/\.[^.]+$/, "");
+}
+
 // Lightweight RFC-4180 style CSV parser supporting quoted values and commas
 function parseCsvRows(text) {
   const rows = [];
@@ -63,9 +67,8 @@ function daysInMonth(year, month1Based) {
   return new Date(year, month1Based, 0).getDate();
 }
 
-function parseDayFromFilename(filename) {
-  const base = filename.replace(/\.[^.]+$/, "");
-  const match = base.match(/^(\d{1,2})(?:-.+)?$/);
+function parseDayFromBaseName(baseName) {
+  const match = baseName.match(/^(\d{1,2})(?:-.+)?$/);
   return match ? Number(match[1]) : NaN;
 }
 
@@ -122,7 +125,7 @@ export async function importSeedFolder(fileList) {
   }
 
   let csvFile = null;
-  const imageByKey = new Map();
+  const imageByKey = new Map(); // `${month}/${baseName}` -> { file, fileName }
   const errors = [];
 
   for (const file of files) {
@@ -145,11 +148,15 @@ export async function importSeedFolder(fileList) {
         errors.push(`Invalid month folder "${monthFolder}" in "${relPath}". Use YYYY-MM.`);
         continue;
       }
-      const key = `${monthFolder}/${fileName}`;
+      const baseName = stripExtension(fileName);
+      const key = `${monthFolder}/${baseName}`;
       if (imageByKey.has(key)) {
-        errors.push(`Duplicate image file "${key}".`);
+        const prev = imageByKey.get(key);
+        errors.push(
+          `Ambiguous base name "${key}" in ${monthFolder}: found both "${prev.fileName}" and "${fileName}".`
+        );
       } else {
-        imageByKey.set(key, file);
+        imageByKey.set(key, { file, fileName });
       }
     }
   }
@@ -181,7 +188,8 @@ export async function importSeedFolder(fileList) {
     const lineNum = r + 1;
 
     const month = (row[colIndex.month] ?? "").trim();
-    const fileName = (row[colIndex.file] ?? "").trim();
+    const rawFile = (row[colIndex.file] ?? "").trim();
+    const baseName = stripExtension(rawFile);
     const name = (row[colIndex.name] ?? "").trim();
     const rawAmount = (row[colIndex.amount] ?? "").trim().replace(/[₱,]/g, "");
     const rawCategory = (row[colIndex.category] ?? "").trim();
@@ -193,12 +201,12 @@ export async function importSeedFolder(fileList) {
       continue;
     }
 
-    if (!fileName) {
+    if (!baseName) {
       errors.push(`Row ${lineNum}: missing file name.`);
       continue;
     }
 
-    const key = `${month}/${fileName}`;
+    const key = `${month}/${baseName}`;
     if (seenCsvKeys.has(key)) {
       errors.push(`Row ${lineNum}: duplicate CSV entry for "${key}".`);
       continue;
@@ -206,7 +214,7 @@ export async function importSeedFolder(fileList) {
     seenCsvKeys.add(key);
 
     if (!imageByKey.has(key)) {
-      errors.push(`Row ${lineNum}: image "${key}" was not found in the selected folder.`);
+      errors.push(`Row ${lineNum}: no image matching "${key}" was found in the selected folder.`);
       continue;
     }
 
@@ -229,10 +237,10 @@ export async function importSeedFolder(fileList) {
       continue;
     }
 
-    const day = parseDayFromFilename(fileName);
+    const day = parseDayFromBaseName(baseName);
     if (Number.isNaN(day)) {
       errors.push(
-        `Row ${lineNum} (${key}): filename must start with the day of the month (e.g., 3.jpg or 3-2.jpg).`
+        `Row ${lineNum} (${key}): file name must start with the day of the month (e.g., 3 or 3-2).`
       );
       continue;
     }
@@ -244,7 +252,7 @@ export async function importSeedFolder(fileList) {
       const createdAt = buildIsoTimestamp(year, month1Based, day, parsedItems.length);
       parsedItems.push({
         key,
-        file: imageByKey.get(key),
+        file: imageByKey.get(key).file,
         name,
         amount,
         category: normalizeCategory(rawCategory),
@@ -256,9 +264,9 @@ export async function importSeedFolder(fileList) {
     }
   }
 
-  for (const key of imageByKey.keys()) {
+  for (const [key, info] of imageByKey.entries()) {
     if (!seenCsvKeys.has(key)) {
-      errors.push(`Image "${key}" exists in folder but has no matching row in seed.csv.`);
+      errors.push(`Image "${key}" ("${info.fileName}") exists in folder but has no matching row in seed.csv.`);
     }
   }
 
