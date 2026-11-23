@@ -28,7 +28,7 @@ Seed Data/
 
 ### Naming Rules
 * **Month folders:** Must follow `YYYY-MM` format (e.g., `2026-07` through `2026-10`).
-* **Image filenames:** Must start with the day of the month (`1`–`31`). For multiple purchases on the same day, append a dash suffix (e.g., `3.jpg`, `3-2.jpg`). Supported formats: `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif`.
+* **Image filenames:** Must start with the day of the month (`1`–`31`). For multiple purchases on the same day, append a dash suffix (e.g., `3.jpg`, `3-2.jpg`, `3-3.jpg`). Supported formats: `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif`.
 * **No category subfolders:** Categories are defined inside `seed.csv`, keeping all photos for a given month directly inside `Seed Data/<YYYY-MM>/`.
 
 ---
