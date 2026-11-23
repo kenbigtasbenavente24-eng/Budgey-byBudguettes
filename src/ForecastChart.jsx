@@ -1,5 +1,5 @@
 // Line graph for the forecast slide of the Budgey Recap: weekly spending against
-// what the forecast said. It only draws; forecastChart.js decides what to draw.
+// what the forecast said. It only draws; forecastSlide.js decides what to draw.
 //
 //   chart        the `chart` object from forecastSlideFor()
 //   splitLabels  optional { left, right }: small captions on each side of the
@@ -17,7 +17,7 @@
 // screen readers (taps on the slide change slides, so there is no hover here).
 
 import { useEffect, useRef, useState } from "react";
-import { axisPeso } from "./forecastChart";
+import { axisPeso } from "./forecastSlide";
 import { peso } from "./recapData";
 import "./ForecastChart.css";
 

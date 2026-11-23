@@ -96,7 +96,7 @@ export function weeklyTotals(entries, startedAt, due) {
   }));
 }
 
-// (Which forecasts a monthly recap shows is decided in forecastChart.js, by
+// (Which forecasts a monthly recap shows is decided in forecastSlide.js, by
 // forecastSlideFor(): the new one, and last month's to compare with.)
 
 // The body for POST /v1/forecast

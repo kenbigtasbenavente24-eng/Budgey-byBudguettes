@@ -1,4 +1,4 @@
-// src/forecastChart.js
+// src/forecastSlide.js
 // Data for the forecast slide of the Budgey Recap: a line graph of what the user
 // spent each week, next to what Budgey's forecast said. Pure functions only
 // (no React), so they are easy to test. forecast.js has the schedule rules.

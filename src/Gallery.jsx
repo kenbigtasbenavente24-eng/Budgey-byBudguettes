@@ -4,7 +4,7 @@ import icons from "./icons";
 import { formatPeso, formatPesoFull } from "./money";
 import Recap from "./Recap";
 import { buildRecap } from "./recapData";
-import { forecastSlideFor } from "./forecastChart";
+import { forecastSlideFor } from "./forecastSlide";
 import { normalizeCategory } from "./categories";
 
 const MONTHS = [

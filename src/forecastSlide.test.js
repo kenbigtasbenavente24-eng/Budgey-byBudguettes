@@ -15,7 +15,7 @@ import {
   monthTicks,
   niceScale,
   weekTotalsOnGrid,
-} from "./forecastChart.js";
+} from "./forecastSlide.js";
 
 const day = (y, m, d) => new Date(y, m - 1, d, 12); // noon, local time
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n, 12);

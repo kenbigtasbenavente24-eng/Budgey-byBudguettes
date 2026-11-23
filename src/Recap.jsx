@@ -297,7 +297,7 @@ function ReasonPie({ reasons }) {
 }
 
 // The forecast slide, shown from the first forecast on (it sits before "Budgey says").
-// `forecast` comes from forecastSlideFor() in forecastChart.js, which has the
+// `forecast` comes from forecastSlideFor() in forecastSlide.js, which has the
 // full story of the two modes: "first" (no earlier forecast to compare with) and
 // "review" (last month's 4-week forecast against what was spent, plus the new
 // forecast for the next 4 weeks).
