@@ -90,15 +90,18 @@ export default function App() {
   const saveEntry = async (entry) => {
     const photo = await shrinkPhoto(entry.photo);
     const createdAt = new Date().toISOString();
-    setEntries((prev) => [
-      {
-        ...entry,
-        photo,
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2),
-        createdAt,
-      },
-      ...prev,
-    ]);
+    // migrateEntries makes a newly typed category use the spelling already in use
+    setEntries((prev) =>
+      migrateEntries([
+        {
+          ...entry,
+          photo,
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+          createdAt,
+        },
+        ...prev,
+      ])
+    );
     setSettings((s) => (s.startedAt ? s : { ...s, startedAt: createdAt }));
     setPendingPhoto(null);
     setScreen("gallery");
@@ -106,16 +109,18 @@ export default function App() {
 
   const updateEntry = (id, changes) => {
     setEntries((prev) =>
-      prev.map((e) =>
-        e.id === id
-          ? {
-              ...e,
-              name: changes.name,
-              amount: changes.amount,
-              category: changes.category,
-              reason: changes.reason,
-            }
-          : e
+      migrateEntries(
+        prev.map((e) =>
+          e.id === id
+            ? {
+                ...e,
+                name: changes.name,
+                amount: changes.amount,
+                category: changes.category,
+                reason: changes.reason,
+              }
+            : e
+        )
       )
     );
     setEditing(null);

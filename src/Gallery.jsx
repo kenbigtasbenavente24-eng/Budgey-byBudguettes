@@ -5,12 +5,16 @@ import { formatPeso, formatPesoFull } from "./money";
 import Recap from "./Recap";
 import { buildRecap } from "./recapData";
 import { forecastForRecap } from "./forecast";
-import { normalizeCategory } from "./categories";
-
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+import FilterSheet from "./FilterSheet";
+import {
+  MONTHS,
+  EMPTY_FILTER,
+  applyFilter,
+  countActive,
+  pruneFilter,
+  summaryLabel,
+  topStat,
+} from "./galleryFilter";
 
 const REASON_ORDER = ["Need", "Reward", "Want"];
 
@@ -32,6 +36,12 @@ export default function Gallery({ entries, settings, forecasts, onNavigate, onDe
   const [viewing, setViewing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [recapOpen, setRecapOpen] = useState(false);
+  const [filter, setFilter] = useState(EMPTY_FILTER);
+  const [filterOpen, setFilterOpen] = useState(false);
+  // Drop a chosen value that has no entries left (e.g. its last photo was deleted)
+  const activeFilter = useMemo(() => pruneFilter(filter, entries), [filter, entries]);
+  const filtering = countActive(activeFilter) > 0;
+  const visible = useMemo(() => applyFilter(entries, activeFilter), [entries, activeFilter]);
   const recap = useMemo(() => buildRecap(entries, new Date()), [entries]);
   // The 3-month forecast shown on the recap's "Budgey says" slide, if this is a forecast month
   const forecast = useMemo(
@@ -42,7 +52,7 @@ export default function Gallery({ entries, settings, forecasts, onNavigate, onDe
   // Group photos by month, newest first
   const groups = useMemo(() => {
     const map = new Map();
-    [...entries]
+    [...visible]
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .forEach((e) => {
         const d = new Date(e.createdAt);
@@ -53,43 +63,48 @@ export default function Gallery({ entries, settings, forecasts, onNavigate, onDe
             month: MONTHS[d.getMonth()],
             year: d.getFullYear(),
             items: [],
+            total: 0,
           });
         }
-        map.get(key).items.push(e);
+        const group = map.get(key);
+        group.items.push(e);
+        group.total += e.amount;
       });
     return [...map.values()];
-  }, [entries]);
+  }, [visible]);
 
-  // Spending summary: total, split by reason, and top category
+  // Spending summary: total and split by reason, for what is showing
   const stats = useMemo(() => {
     const byReason = { Need: 0, Reward: 0, Want: 0 };
-    const byCategory = {};
     let total = 0;
 
-    entries.forEach((e) => {
+    visible.forEach((e) => {
       total += e.amount;
       if (e.reason in byReason) byReason[e.reason] += e.amount;
-      const category = normalizeCategory(e.category); // same names as the Recap
-      byCategory[category] = (byCategory[category] || 0) + e.amount;
     });
 
-    const top =
-      Object.entries(byCategory).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "---";
+    return { total, byReason };
+  }, [visible]);
 
-    return { total, byReason, top };
-  }, [entries]);
+  // Header text. The small stat shows whatever you are not filtering by.
+  const heading = useMemo(() => summaryLabel(activeFilter, new Date()), [activeFilter]);
+  const top = useMemo(
+    () => topStat(visible, activeFilter, new Date()),
+    [visible, activeFilter]
+  );
 
   // Escape closes the newest layer first
   useEffect(() => {
     const onKey = (e) => {
       if (e.key !== "Escape") return;
-      if (confirming) setConfirming(false);
+      if (filterOpen) setFilterOpen(false);
+      else if (confirming) setConfirming(false);
       else if (viewing) setViewing(false);
       else setSelected(null);
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [viewing, confirming]);
+  }, [viewing, confirming, filterOpen]);
 
   const confirmDelete = () => {
     onDelete?.(selected.id);
@@ -114,6 +129,15 @@ export default function Gallery({ entries, settings, forecasts, onNavigate, onDe
               <img src={icons.addPhoto} width="22" height="22" alt="" />
             </button>
             <button
+              className="gallery__filter"
+              onClick={() => setFilterOpen(true)}
+              aria-label={filtering ? `Filter, ${countActive(activeFilter)} active` : "Filter"}
+              aria-haspopup="dialog"
+            >
+              <img src={icons.filter} width="24" height="24" alt="" />
+              {filtering && <i className="gallery__filter-dot" aria-hidden="true" />}
+            </button>
+            <button
               className="gallery__settings"
               onClick={onOpenSettings}
               aria-label="Settings"
@@ -123,12 +147,12 @@ export default function Gallery({ entries, settings, forecasts, onNavigate, onDe
           </div>
         </div>
 
-        <p className="gallery__label">Total Spending</p>
+        <p className="gallery__label">{heading}</p>
         <div className="gallery__total">
           <strong title={formatPesoFull(stats.total)}>{formatPeso(stats.total)}</strong>
           <div className="gallery__top">
-            <b>{stats.top}</b>
-            <span>Top Category</span>
+            <b title={top.value}>{top.value}</b>
+            <span>{top.caption}</span>
           </div>
         </div>
 
@@ -163,9 +187,17 @@ export default function Gallery({ entries, settings, forecasts, onNavigate, onDe
             <img src={icons.emptyGallery} width="150" height="130" alt="" />
             <p>The photos you took in this app will show up here</p>
           </div>
+        ) : visible.length === 0 ? (
+          <div className="empty">
+            <img src={icons.emptyGallery} width="150" height="130" alt="" />
+            <p>No purchases match these filters</p>
+            <button className="empty__btn" onClick={() => setFilter(EMPTY_FILTER)}>
+              Clear filters
+            </button>
+          </div>
         ) : (
           <>
-            {recap && (
+            {recap && !filtering && (
               <button className="recap-banner" onClick={() => setRecapOpen(true)}>
                 <span className="recap-banner__logo" aria-hidden="true">b.</span>
                 <span className="recap-banner__text">
@@ -191,7 +223,10 @@ export default function Gallery({ entries, settings, forecasts, onNavigate, onDe
             {groups.map((g) => (
               <div key={g.key} className="month">
                 <h2 className="month__head">
-                  {g.month}, {g.year}
+                  <span>{g.month}, {g.year}</span>
+                  <span className="month__total" title={formatPesoFull(g.total)}>
+                    {formatPeso(g.total)}
+                  </span>
                 </h2>
                 <div className="grid">
                   {g.items.map((e) => (
@@ -215,6 +250,16 @@ export default function Gallery({ entries, settings, forecasts, onNavigate, onDe
       {recapOpen && recap && (
       <Recap recap={recap} forecast={forecast} onClose={() => setRecapOpen(false)} />
 )}
+
+      {filterOpen && (
+        <FilterSheet
+          entries={entries}
+          filter={activeFilter}
+          resultCount={visible.length}
+          onChange={setFilter}
+          onClose={() => setFilterOpen(false)}
+        />
+      )}
 
       {/* Details card */}
       {selected && (
