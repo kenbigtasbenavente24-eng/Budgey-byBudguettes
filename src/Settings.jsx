@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import "./Settings.css";
 import { formatPesoFull } from "./money";
 import { cleanAmountInput, validTarget } from "./settingsStore";
 
 // Settings screen. For now it has one setting: the target weekly spending.
 // It is optional: leaving it empty simply means no target.
-export default function Settings({ targetWeekly, onSave, onBack }) {
+export default function Settings({ targetWeekly, onSave, onBack, onImportSeed }) {
   const [text, setText] = useState(targetWeekly ? String(targetWeekly) : "");
   const [status, setStatus] = useState("");
+  const folderInputRef = useRef(null);
+  const [seedStatus, setSeedStatus] = useState(null);
 
   const value = validTarget(text); // null when empty, "0" or "."
   const isEmpty = text.trim() === "";
@@ -24,6 +26,27 @@ export default function Settings({ targetWeekly, onSave, onBack }) {
     if (!canSave) return;
     onSave?.(isEmpty ? null : value);
     setStatus(isEmpty ? "Target removed" : `Target saved: ${formatPesoFull(value)} a week`);
+  };
+
+  const handleFolderChange = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setSeedStatus({ type: "loading", message: "Importing Seed Data..." });
+    try {
+      const count = await onImportSeed?.(files);
+      setSeedStatus({
+        type: "ok",
+        message: `Imported ${count ?? files.length} seed entries into budgey:entries.`,
+      });
+    } catch (err) {
+      setSeedStatus({
+        type: "error",
+        message: err instanceof Error ? err.message : "Failed to import seed folder.",
+      });
+    } finally {
+      e.target.value = "";
+    }
   };
 
   return (
@@ -68,6 +91,31 @@ export default function Settings({ targetWeekly, onSave, onBack }) {
             {status}
           </p>
         </form>
+
+        {import.meta.env.DEV && (
+          <div className="settings__card settings__dev">
+            <input
+              ref={folderInputRef}
+              type="file"
+              webkitdirectory=""
+              directory=""
+              multiple
+              hidden
+              onChange={handleFolderChange}
+            />
+            <button
+              type="button"
+              className="settings__save"
+              disabled={seedStatus?.type === "loading"}
+              onClick={() => folderInputRef.current?.click()}
+            >
+              {seedStatus?.type === "loading" ? "Importing..." : "Import Seed Folder (Dev)"}
+            </button>
+            <p className="settings__status" role="status" aria-live="polite" style={{ whiteSpace: "pre-line" }}>
+              {seedStatus?.message ?? ""}
+            </p>
+          </div>
+        )}
       </section>
     </main>
   );
