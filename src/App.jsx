@@ -7,6 +7,7 @@ import { classifyForTag } from "./api";
 import { migrateEntries } from "./categories";
 import { loadSettings, oldestEntryDate, saveSettings } from "./settingsStore";
 import { useForecasts } from "./useForecasts";
+import { importSeedFolder } from "./seedImporter";
 
 const STORAGE_KEY = "budgey:entries";
 
@@ -59,21 +60,21 @@ export default function App() {
   // category in the background. If the backend is off or fails, the user just
   // picks the category themselves like before.
   const handleCapture = (photo) => {
-  const id = ++classifyId.current;
-  setClassification({ status: "loading" });
-  setPendingPhoto(photo);
-  shrinkPhoto(photo)
-    .then(classifyForTag)
-    .then((result) => {
-      if (id === classifyId.current) {
-        setClassification({ status: "done", ...result });
-      }
-    })
-    .catch((err) => {
-      console.warn("Classifier unavailable:", err);
-      if (id === classifyId.current) setClassification({ status: "error" });
-    });
-};
+    const id = ++classifyId.current;
+    setClassification({ status: "loading" });
+    setPendingPhoto(photo);
+    shrinkPhoto(photo)
+      .then(classifyForTag)
+      .then((result) => {
+        if (id === classifyId.current) {
+          setClassification({ status: "done", ...result });
+        }
+      })
+      .catch((err) => {
+        console.warn("Classifier unavailable:", err);
+        if (id === classifyId.current) setClassification({ status: "error" });
+      });
+  };
 
   useEffect(() => {
     try {
@@ -129,6 +130,17 @@ export default function App() {
   const deleteEntry = (id) =>
     setEntries((prev) => prev.filter((e) => e.id !== id));
 
+  const handleImportSeed = async (fileList) => {
+    if (!import.meta.env.DEV) return 0;
+    const imported = await importSeedFolder(fileList);
+    setEntries(imported);
+    const earliest = oldestEntryDate(imported);
+    if (earliest) {
+      setSettings((s) => ({ ...s, startedAt: earliest }));
+    }
+    return imported.length;
+  };
+
   // New photo: tag it
   if (pendingPhoto) {
     return (
@@ -160,6 +172,7 @@ export default function App() {
         targetWeekly={settings.targetWeekly}
         onSave={(targetWeekly) => setSettings((s) => ({ ...s, targetWeekly }))}
         onBack={() => setScreen("gallery")}
+        onImportSeed={import.meta.env.DEV ? handleImportSeed : undefined}
       />
     );
   }
