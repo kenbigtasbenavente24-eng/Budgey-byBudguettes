@@ -12,7 +12,7 @@ export const FORECASTS_KEY = "budgey:forecasts";
 
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 
-// Is this what the Says slide needs? Checked on load, so a corrupt or old
+// Is this what the forecast slide needs? Checked on load, so a corrupt or old
 // record is dropped (and generated again) instead of crashing the slide.
 export function isForecastRecord(record) {
   const r = record?.result;

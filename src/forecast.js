@@ -1,16 +1,20 @@
 // src/forecast.js
-// Schedule and input for the quarterly spending forecast. Pure functions only
+// Schedule and input for the spending forecast. Pure functions only
 // (no React), so they are easy to test.
 //
 // Team rules:
 //  - Months are calendar months.
-//  - The forecast is due on the 1st of the 4th month after the user started
-//    (first entry any day in January -> April 1), then every 3 months after
-//    that (July 1, October 1, ...).
+//  - The first forecast is due on the 1st of the 4th month after the user
+//    started (first entry any day in January -> April 1), so there are at
+//    least 12 weeks of history to work from. After that a new forecast is due
+//    on the 1st of every month (May 1, June 1, ...), so each monthly recap can
+//    compare the last forecast with what was actually spent.
+//  - Each forecast covers the next 4 weeks.
 //  - The backend is stateless: the app sends weekly totals and the user's
 //    target, and gets back a verdict (POST /v1/forecast).
 
-export const FORECAST_MONTHS = 3;
+export const FIRST_FORECAST_MONTHS = 3; // months of history before the first forecast
+export const FORECAST_EVERY_MONTHS = 1; // after the first, a new forecast this often
 export const HORIZON_WEEKS = 4;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -26,7 +30,7 @@ const monthStart = (d, offset = 0) =>
   new Date(d.getFullYear(), d.getMonth() + offset, 1);
 
 // Whole days between two dates, by calendar day (ignores time of day)
-const dayDiff = (a, b) =>
+export const dayDiff = (a, b) =>
   Math.round(
     (Date.UTC(b.getFullYear(), b.getMonth(), b.getDate()) -
       Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())) /
@@ -38,12 +42,12 @@ const dayDiff = (a, b) =>
 export function dueDates(startedAt, now = new Date()) {
   const started = new Date(startedAt);
   // No start date yet (or an unreadable one): nothing is due. Without this,
-  // null would be read as 1970 and every quarter since then would be "due".
+  // null would be read as 1970 and every month since then would be "due".
   if (!startedAt || Number.isNaN(started.getTime())) return [];
   const start = monthStart(started);
   const dates = [];
-  for (let k = 1; k < 200; k++) {
-    const due = monthStart(start, FORECAST_MONTHS * k);
+  for (let k = 0; k < 600; k++) {
+    const due = monthStart(start, FIRST_FORECAST_MONTHS + FORECAST_EVERY_MONTHS * k);
     if (due > now) break;
     dates.push(due);
   }
@@ -54,9 +58,12 @@ export function dueDates(startedAt, now = new Date()) {
 // not opened for months) only the latest matters. `savedKeys` are the
 // date keys (toDateKey) of forecasts that were already generated and saved.
 export function pendingDue(startedAt, savedKeys = [], now = new Date()) {
-  const saved = new Set(savedKeys);
-  const open = dueDates(startedAt, now).filter((d) => !saved.has(toDateKey(d)));
-  return open.length ? open[open.length - 1] : null;
+  // Only the newest due date counts. An older one that was skipped is never
+  // generated later: it would be stale, and it would sit between the saved ones.
+  const due = dueDates(startedAt, now);
+  if (!due.length) return null;
+  const latest = due[due.length - 1];
+  return new Set(savedKeys).has(toDateKey(latest)) ? null : latest;
 }
 
 // Weekly spending totals up to `due` (the day the forecast is generated).
@@ -89,22 +96,8 @@ export function weeklyTotals(entries, startedAt, due) {
   }));
 }
 
-// The forecast that belongs to a monthly recap, for the "Budgey says" slide.
-// A recap is about the month that just ended, so its forecast is the one due
-// on the 1st of the month after that (the current month). `forecasts` are the
-// saved ones, keyed by date key. Returns:
-//   { state: "ready", record }   a saved forecast to show
-//   { state: "needs_target" }    due, but the user has not set a target
-//   { state: "pending" }         due, but not generated yet (backend was down)
-//   null                         not a forecast month
-export function forecastForRecap(recap, forecasts, { startedAt, targetWeekly } = {}, now = new Date()) {
-  if (!recap) return null;
-  const key = toDateKey(new Date(recap.year, recap.month, 1));
-  if (forecasts?.[key]) return { state: "ready", record: forecasts[key] };
-  const isDue = dueDates(startedAt, now).some((d) => toDateKey(d) === key);
-  if (!isDue) return null;
-  return { state: targetWeekly ? "pending" : "needs_target" };
-}
+// (Which forecasts a monthly recap shows is decided in forecastSlide.js, by
+// forecastSlideFor(): the new one, and last month's to compare with.)
 
 // The body for POST /v1/forecast
 export function buildForecastRequest(entries, startedAt, due, targetWeekly) {

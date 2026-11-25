@@ -37,7 +37,7 @@ export async function classifyForTag(dataUrl) {
   };
 }
  
-// Ask the backend for the 4-week spending forecast. `body` comes from
+// Ask the backend for the spending forecast (the next 4 weeks). `body` comes from
 // buildForecastRequest() in forecast.js: { weekly_totals, horizon, target_weekly }.
 // Returns { method, weeks_used, forecast, forecast_avg_weekly, lower, upper,
 // target_weekly, verdict } where verdict is "warn" or "keep_it_up".

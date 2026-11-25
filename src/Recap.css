@@ -6,7 +6,7 @@
   --cream: #f4efe3;
   --green: #1b7a3c;
 
-  /* Per-slide theme (see .recap--1 ... .recap--5 below) */
+  /* Per-slide theme (see .recap--intro ... .recap--says below) */
   --bg: var(--orange);
   --fg: var(--ink);
   --track: rgba(20, 12, 7, 0.25);
@@ -27,20 +27,21 @@
   transition: background-color 0.35s ease;
 }
 
-.recap--1 { --bg: var(--orange); --fg: var(--ink); }
-.recap--2,
-.recap--5 {
+.recap--intro { --bg: var(--orange); --fg: var(--ink); }
+.recap--favorite,
+.recap--says {
   --bg: var(--ink);
   --fg: var(--cream);
   --track: rgba(244, 239, 227, 0.22);
   --fill: var(--cream);
 }
-.recap--3 {
+.recap--breakdown,
+.recap--forecast {
   --bg: var(--cream);
   --fg: var(--ink);
   --track: rgba(20, 12, 7, 0.14);
 }
-.recap--4 {
+.recap--trend {
   --bg: var(--green);
   --fg: var(--cream);
   --track: rgba(244, 239, 227, 0.25);
@@ -415,7 +416,7 @@
   opacity: 0.8;
 }
 
-/* ---- Slide 5: Budgey says ---- */
+/* ---- Last slide: Budgey says ---- */
 .rs__says {
   flex: 1;
   min-height: 0;
@@ -496,7 +497,7 @@
   border-radius: 2px;
   background: var(--fg);
 }
-/* Short phones: shrink things so the message, pie, forecast note and buttons all fit */
+/* Short phones: shrink things so the message, pie and buttons all fit */
 @media (max-height: 700px) {
   .rs--says .rs__avatar { width: 40px; height: 40px; font-size: 20px; }
   .rs--says .rs__message { font-size: 20px; }
@@ -508,62 +509,58 @@
   .rs__pie-svg { width: 66px; }
   .rs__pie-legend .rs__pie-guide { display: none; }
 }
-/* Forecast months have one more card, so short phones drop the avatar (the chip already says who is talking) */
-@media (max-height: 690px) {
-  .rs__says--note .rs__avatar { display: none; }
+/* ---- Forecast slide (forecast months only, before Budgey says) ---- */
+.rs--forecast { gap: 0; }
+.rs--forecast .chip { margin-bottom: clamp(8px, 1.6dvh, 14px); }
+.rs--forecast .rs__title { margin: 0 0 clamp(8px, 1.6dvh, 14px); font-size: clamp(24px, 3.7dvh, 30px); }
+/* The graph (with its legend) takes the space the title and notes leave, within limits */
+.rs__fchart {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 170px;
+  max-height: 420px;
+  margin: 0 -6px clamp(8px, 1.6dvh, 14px);
 }
-
-/* 3-month forecast under the message (forecast months only) */
-.rs__says--note { gap: 14px; }
-.rs__says--note .rs__message { font-size: clamp(19px, 3.1dvh, 26px); }
-@media (max-height: 600px) {
-  .rs__says--note { gap: 10px; }
-  .rs__says--note .rs__message { font-size: 17px; }
-  .rs__forecast { padding: 10px 14px; }
-  .rs__forecast-text { font-size: 14px; }
+.rs__fcards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
 }
-.rs__forecast {
+.rs__fcard {
   margin: 0;
-  padding: 14px 16px;
-  border-radius: 18px;
-  background: rgba(244, 239, 227, 0.08);
-  border: 1px solid rgba(244, 239, 227, 0.14);
+  padding: 11px 14px;
+  border-radius: 16px;
+  background: rgba(20, 12, 7, 0.05);
+  border: 1px solid rgba(20, 12, 7, 0.12);
 }
-.rs__forecast-label {
+.rs__fcard-label {
   display: block;
-  margin-bottom: 6px;
-  font-size: 11px;
+  margin-bottom: 4px;
+  font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.12em;
-  color: var(--orange);
+  opacity: 0.65;
 }
-.rs__forecast-text {
+.rs__fcard-text {
   margin: 0;
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 400;
   line-height: 1.4;
 }
-.rs__forecast-text em { font-style: normal; color: var(--orange); font-weight: 600; }
-.rs__forecast-range {
-  margin: 6px 0 0;
+.rs__fcard-text b { font-weight: 700; }
+.rs__fcard-range {
+  margin: 4px 0 0;
   font-size: 12px;
   line-height: 1.4;
-  opacity: 0.7;
+  opacity: 0.65;
 }
-.rs__forecast--hint {
-  font-size: 13px;
-  line-height: 1.4;
-  opacity: 0.8;
-}
-
-/* Very small phones (about 570px tall) in forecast months */
-@media (max-height: 580px) {
-  .rs__says--note { gap: 6px; }
-  .rs__says--note .rs__message { font-size: 16px; }
-  .rs__says--note .rs__pie-svg { width: 56px; }
-  .rs__says--note .rs__forecast { padding: 8px 12px; }
-  .rs__says--note .rs__forecast-label { margin-bottom: 3px; }
-  .rs__says--note .rs__forecast-text { font-size: 13px; }
+.rs__fcard--hint { font-size: 13px; line-height: 1.4; opacity: 0.85; }
+@media (max-height: 700px) {
+  .rs__fcard { padding: 9px 12px; }
+  .rs__fcard-text { font-size: 13px; }
+  .rs__fcard-range { display: none; }
 }
 
 .rs__actions {
