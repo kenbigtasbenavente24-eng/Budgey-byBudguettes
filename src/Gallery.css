@@ -5,6 +5,7 @@
   --bg: #f9f8f4;
   --ink: #1f1712;
   --muted: #6f655b;
+  --total: #1b7a3c;   /* month subtotals */
 
   /* Reason colors: same as the buttons on the tag form */
   --need: #1b7a3c;
@@ -52,6 +53,7 @@
   margin: -6px -8px -6px 0;  /* keeps the header height, lines the icons up with the edge */
 }
 .gallery__settings,
+.gallery__filter,
 .gallery__add {
   display: grid;
   place-items: center;
@@ -65,11 +67,29 @@
   cursor: pointer;
 }
 .gallery__add:active,
+.gallery__filter:active,
 .gallery__settings:active {
   background: #e6dfd2;
 }
+.gallery__filter {
+  position: relative;
+}
+/* Small dot on the filter icon while a filter is on */
+.gallery__filter-dot {
+  position: absolute;
+  top: 5px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--cream);
+  border-radius: 50%;
+  background: var(--want);
+}
 .gallery__label {
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 11px;
   font-weight: 400;
   color: var(--muted);
@@ -157,9 +177,19 @@
   margin-bottom: 24px;
 }
 .month__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
   margin: 0 0 10px;
   font-size: 15px;
   font-weight: 600;
+}
+.month__total {
+  flex: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--total);
 }
 .grid {
   display: grid;
@@ -215,6 +245,16 @@
   font-size: 14px;
   font-weight: 300;
   line-height: 1.5;
+}
+.empty__btn {
+  height: 40px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 12px;
+  background: #241f1b;
+  color: #fff;
+  font: 600 13px "Poppins", system-ui, sans-serif;
+  cursor: pointer;
 }
 
 /* ---- Bottom nav ---- */

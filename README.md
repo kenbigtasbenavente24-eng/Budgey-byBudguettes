@@ -35,14 +35,15 @@ Open the **Network** link on a phone on the same Wi-Fi. The layout loads, but th
 | Camera | `Camera.jsx` | Live preview, flip camera, shutter, and upload from files or the photo library |
 | Photo tag | `PhotoTag.jsx` | Form for item name, amount, category, and reason. It is also used to edit an existing entry. |
 | Gallery | `Gallery.jsx` | Spending summary, photos grouped by month, details card, full-photo viewer, delete with confirmation, and Edit Details |
-| Bottom nav | `BottomNav.jsx` | Camera and Gallery tabs |
+| Filter sheet | `FilterSheet.jsx` | Bottom sheet opened from the filter icon in the Gallery. Pick a year, month, category, and/or reason from dropdowns. |
 
 ## Flow
 
 1. Take a photo or upload one. Both open the tag form.
 2. Fill in the details and press **Add to Gallery**.
 3. The gallery shows the photo under its month, and the totals update.
-4. Tap a photo to see its details. **View this photo** opens the full-screen viewer, where you can **Delete** it or **Edit Details**.
+4. Tap the filter icon to narrow the gallery by year, month, category, and/or reason. The summary at the top follows the filter (for example, "October Spending"), and its small stat shows whatever you are not filtering by (Top Category or Top Month). Filters reset when you leave the Gallery.
+5. Tap a photo to see its details. **View this photo** opens the full-screen viewer, where you can **Delete** it or **Edit Details**.
 
 ## Project structure
 

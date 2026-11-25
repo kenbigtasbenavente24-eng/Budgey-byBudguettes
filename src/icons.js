@@ -6,7 +6,8 @@ import upload from "./assets/icons/icon-upload.svg";
 import emptyGallery from "./assets/icons/icon-empty-gallery.svg";
 import addPhoto from "./assets/icons/icon-addPhoto.svg";
 import settings from "./assets/icons/icon-settings.svg"
+import filter from "./assets/icons/icon-filter.svg";
 
-const icons = { camera, gallery, upload, emptyGallery, addPhoto, settings};
+const icons = { camera, gallery, upload, emptyGallery, addPhoto, settings, filter };
 
 export default icons;
