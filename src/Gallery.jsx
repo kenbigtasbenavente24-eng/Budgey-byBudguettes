@@ -5,12 +5,16 @@ import { formatPeso, formatPesoFull } from "./money";
 import Recap from "./Recap";
 import { buildRecap } from "./recapData";
 import { forecastSlideFor } from "./forecastSlide";
-import { normalizeCategory } from "./categories";
-
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+import FilterSheet from "./FilterSheet";
+import {
+  MONTHS,
+  EMPTY_FILTER,
+  applyFilter,
+  countActive,
+  pruneFilter,
+  summaryLabel,
+  topStat,
+} from "./galleryFilter";
 
 const REASON_ORDER = ["Need", "Reward", "Want"];
 
